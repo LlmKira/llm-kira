@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "llm_kira"
+version = "0.0.1"
+description = "client for llm"
+authors = ["sudoskys <coldlando@hotmail.com>"]
+maintainers = [
+    "sudoskys <coldlando@hotmail.com>"
+]
+repository = "https://github.com/sudoskys/llm_kira"
+license = "LGPL-2.1-or-later"
+readme = "README.md"
+packages = [{ include = "llm_kira", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+httpx = "^0.23.1"
+redis = "^4.4.0"
+nltk = "^3.8"
+pillow = "^9.3.0"
+jieba = "^0.42.1"
+transformers = "^4.25.1"
+beautifulsoup4 = "^4.11.1"
+pydantic = "^1.10.4"
+loguru = "^0.6.0"
+elara = "^0.5.4"
+openai-async = "^0.0.2"
+numpy = "^1.24.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
