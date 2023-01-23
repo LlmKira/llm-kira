@@ -1,0 +1,310 @@
+# -*- coding: utf-8 -*-
+# @Time    : 1/23/23 11:18 PM
+# @FileName: anchor.py
+# @Software: PyCharm
+# @Github    ：sudoskys
+from typing import Union, Callable
+
+# Tool
+from loguru import logger
+
+from . import Optimizer
+from .enhance import Support
+from .llm import LlmBase, LlmReturn
+from ..utils.chat import Detect
+from ..utils.data import MsgFlow
+# 基于 Completion 上层
+from .types import PromptItem, MemoryItem, Memory_Flow, ChatBotReturn
+from .Optimizer import convert_msgflow_to_list
+
+from .agent import Conversation
+
+
+class Preset(object):
+    """
+    预设和角色
+    """
+
+    def __init__(self, profile: Conversation):
+        self.profile = profile
+
+    @staticmethod
+    def add_tail(switch: bool = False, sentence: str = "", tail: str = ""):
+        if switch:
+            return f"{sentence}{tail}"
+        else:
+            return f"{sentence}"
+
+    def character(self,
+                  character: list = None,
+                  lang: str = "ZH"
+                  ) -> list:
+        if character:
+            return character
+        lang = lang.upper()
+        if lang == "ZH":
+            return ["受过教育的", "聪明的",
+                    "友好的", "可爱的",
+                    "幽默地", "有趣地", "温柔地"]
+        elif lang == "EN":
+            return [
+                "educated", "glamorous",
+                "helpful", "girlish",
+                "clever", "friendly",
+                "cute", "talkative",
+                "Humorously"
+            ]
+        elif lang == "JA":
+            return ["教育された", "魅力的な", "丁寧な", "女性らしい", "賢い", "親切な", "可愛い", "喋っているような", "ユーモラスに", "興味深い",
+                    "優しく"]
+        else:
+            return [
+                "educated", "glamorous",
+                "helpful", "girlish",
+                "clever", "friendly",
+                "cute", "talkative",
+                "Humorously", "Interesting",
+                "Tenderly"
+            ]
+
+    def role(self, role: str = "",
+             name: str = "",
+             character: str = "",
+             prompt_iscode: bool = False,
+             lang: str = "ZH"
+             ) -> str:
+        if role:
+            return role
+        lang = lang.upper()
+        role = ""
+        if lang == "ZH":
+            role = f"{name} 是一个 {character} 的少女，聪明伶俐，经常帮我"
+            role = self.add_tail(prompt_iscode, sentence=role, tail="是编程大师冠军,")
+        elif lang == "EN":
+            role = f"{name} is a {character} girl, always help me"
+            role = self.add_tail(prompt_iscode, sentence=role, tail="a Master Programmer Champion,")
+        elif lang == "JA":
+            role = f"{name}は{character}の女の子です。 しばし手伝って"
+            role = self.add_tail(prompt_iscode, sentence=role, tail="マスター プログラマー チャンピオンになる,")
+        return f"{role} "
+
+    def head(self,
+             head: str = "",
+             prompt_iscode: bool = False,
+             lang: str = "ZH"
+             ) -> str:
+        if head:
+            return head
+        lang = lang.upper()
+        head = ""
+        start_name = self.profile.start_name
+        restart_name = self.profile.restart_name
+        if lang == "ZH":
+            head = f"{start_name} 正在和 {restart_name} 聊天"
+            head = self.add_tail(prompt_iscode, sentence=head, tail="提供编程指导,")
+        elif lang == "EN":
+            head = f"{start_name} is a {restart_name} girl, always help me"
+            head = self.add_tail(prompt_iscode, sentence=head, tail="Provide programming guidance,")
+        elif lang == "JA":
+            head = f"{start_name}は{restart_name}の女の子です。 しばし手伝って"
+            head = self.add_tail(prompt_iscode, sentence=head, tail="プログラミング指導を提供する,")
+        return f"{head} "
+
+
+class PromptManger(object):
+    def __init__(self,
+                 profile: Conversation,
+                 connect_words: str = "\n"
+                 ):
+        self.profile = profile
+        self.__start_name = profile.start_name
+        self.__restart_name = profile.restart_name
+        self.__memory = []
+        self.__connect_words = connect_words
+
+    @property
+    def restart_name(self):
+        return self.__restart_name
+
+    @property
+    def start_name(self):
+        return self.__start_name
+
+    def clean(self):
+        self.__memory = []
+        return True
+
+    def override(self, item: list[PromptItem]):
+        self.__memory = []
+        for index in item:
+            self.__memory.append(index)
+
+    def insert(self, item: PromptItem):
+        self.__memory.append(item)
+
+    def run(self
+            ):
+        _result = []
+        for item in self.__memory:
+            item: PromptItem
+            _result.append(f"{item.start}:{item.text}")
+        return self.__connect_words.join(_result)
+
+
+class MemoryManger(object):
+    def __init__(self,
+                 profile: Conversation,
+                 ):
+        self.profile = profile
+        self._MsgFlow = MsgFlow(uid=self.profile.conversation_id)
+
+    def reset_chat(self):
+        # Forgets conversation
+        return self._MsgFlow.forget()
+
+    def read_memory(self, plain_text: bool = False, sign: bool = False) -> list:
+        """
+        读取记忆桶
+        :param sign: 是否签名
+        :param plain_text: 是否转化为列表
+        """
+        _result = self._MsgFlow.read()
+        _result: list[Memory_Flow]
+        if plain_text:
+            _result = convert_msgflow_to_list(msg_list=_result, sign=sign)
+        return _result
+
+    def save_context(self, ask, reply, no_head: bool = True):
+        """
+        回复填充进消息桶
+        """
+        # 新建对话
+        _msg = MemoryItem(**{"weight": [],
+                             "ask": f"{self.profile.restart_name}:{ask}",
+                             "reply": f"{self.profile.start_name}:{reply}"})
+        if no_head:
+            _msg = MemoryItem(**{"weight": [], "ask": f"{ask}", "reply": f"{reply}"})
+        # 存储对话
+        self._MsgFlow.saveMsg(msg=_msg)
+        return _msg
+
+
+class ChatBot(object):
+    def __init__(self,
+                 profile: Conversation,
+                 memory_manger: MemoryManger,
+                 optimizer: Optimizer = Optimizer.SinglePoint,
+                 llm_model: LlmBase = None
+                 ):
+        """
+        类型类型，所需的依赖元素
+        """
+        self.profile = profile
+        self.prompt = None
+        self.memory_manger = memory_manger
+        self.optimizer = optimizer
+        if optimizer is None:
+            self.optimizer = Optimizer.SinglePoint
+        self.llm = llm_model
+        if llm_model is None:
+            raise Exception("Whats your llm model?")
+
+    async def predict(self,
+                      prompt: PromptManger,
+                      role: str = None,
+                      head: str = None,
+                      increase: Union[str, Support] = "",
+                      predict_tokens: int = 100,
+                      parse_reply: Callable[[list], str] = None,
+                      **kwargs
+                      ) -> ChatBotReturn:
+        self.prompt = prompt
+        if parse_reply:
+            self.llm.parse_reply = parse_reply
+        if predict_tokens > self.llm.token_limit():
+            raise Exception("Why your predict token > set token limit?")
+
+        prompt: str = self.prompt.run()
+
+        # Lang
+        prompt_lang: str = Detect.get_text_language(sentence=prompt)
+        prompt_iscode: bool = Detect.isCode(sentence=prompt)
+        prompt_preset = Preset(self.profile)
+
+        # Role
+        if role is None:
+            # Character
+            character = prompt_preset.character(lang=prompt_lang)
+            _role = prompt_preset.role(name=self.profile.start_name,
+                                       character=",".join(character),
+                                       prompt_iscode=prompt_iscode,
+                                       lang=prompt_lang)
+            role = f"{self.profile.start_name}:{_role}.\n"
+        # Head
+        if head is None:
+            head = prompt_preset.head(prompt_iscode=prompt_iscode,
+                                      lang=prompt_lang)
+        _header = f"{role}{head}\n"
+
+        # Restart
+        _prompt_s = [f"{prompt}"]
+
+        # Memory
+        _prompt_memory = self.memory_manger.read_memory(plain_text=False)
+
+        # Enhance
+        if isinstance(increase, str):
+            _appendix = increase
+        else:
+            _appendix = await increase.run()
+
+        # PROMPT
+        _prompt_list = [_appendix]
+
+        # Extra
+        _extra_token = int(
+            predict_tokens +
+            len(_prompt_memory) +
+            self.llm.tokenizer(self.profile.start_name) +
+            self.llm.tokenizer(_header + "".join(_prompt_s)) +
+            self.llm.tokenizer(_appendix)
+        )
+
+        # Run Optimizer
+        _prompt_apple = self.optimizer(
+            prompt=prompt,
+            memory=_prompt_memory,
+            extra_token=_extra_token,
+            token_limit=self.llm.token_limit(),
+            tokenizer=self.llm.tokenizer,
+        ).run()
+
+        # After
+        _prompt_list.extend(_prompt_apple)
+        _prompt_list.extend(_prompt_s)
+        # Clean
+        _prompt_list = [item for item in _prompt_list if item]
+        # Stick
+        _prompt = '\n'.join(_prompt_list) + f"\n{self.profile.restart_name}:"
+        if not prompt_iscode:
+            _prompt = _prompt.replace("\n\n", "\n")
+
+        # Resize
+        _limit = self.llm.token_limit() - _extra_token
+        _mk = _limit if _limit > 0 else 0
+        while self.llm.tokenizer(_prompt) > _mk:
+            _prompt = _prompt[4:]
+        _prompt = _header + _prompt
+
+        # GET
+        llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, **kwargs)
+        llm_result: LlmReturn
+
+        # 解析结果返回结果
+        self.memory_manger.save_context(ask=prompt,
+                                        reply=f"{self.profile.restart_name}:{self.llm.parse_reply(llm_result.reply)}",
+                                        no_head=True)
+        return ChatBotReturn(conversation_id=f"{self.profile.conversation_id}",
+                             llm=llm_result,
+                             ask=prompt,
+                             reply=self.llm.parse_reply(llm_result.reply))
