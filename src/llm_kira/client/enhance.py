@@ -9,6 +9,8 @@ from .module.platform import PluginConfig
 from .module.plugin.search import Search
 
 
+# TODO 分离插件层，更好地内置 + 探测器，供外部单独调用。
+
 class Support(object):
     async def run(self
                   ) -> str:
