@@ -125,7 +125,7 @@ class OpenAi(LlmBase):
                 _text = item.get("text")
                 REPLY.append(_text)
         if not REPLY:
-            REPLY = [""]
+            REPLY = ["."]
         return REPLY
 
     @staticmethod
