@@ -5,6 +5,9 @@
 # @Github    ：sudoskys
 from loguru import logger
 
+from .module.platform import PluginConfig
+from .module.plugin.search import Search
+
 
 class Support(object):
     async def run(self
@@ -12,9 +15,9 @@ class Support(object):
         return ""
 
 
-class Plugin(Support):
-    def __init__(self, table: dict, prompt: str):
-        self.table = table
+class PluginSystem(Support):
+    def __init__(self, plugin_table: dict, prompt: str):
+        self.table = plugin_table
         self.prompt = prompt
 
     async def run(self) -> str:
@@ -30,5 +33,17 @@ class Plugin(Support):
             _return.extend(processed)
         reply = "\n".join(_return) if _return else ""
         reply = reply[:555]
+        logger.debug(f"AllPluginReturn:{reply}")
+        return reply
+
+
+class WebSearch(Support):
+    def __init__(self, config: PluginConfig, prompt: str):
+        self.config = config
+        self.prompt = prompt
+
+    async def run(self) -> str:
+        _return = await Search().process(params=self.config)
+        reply = "\n".join(_return) if _return else ""
         logger.debug(f"AllPluginReturn:{reply}")
         return reply
