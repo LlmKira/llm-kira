@@ -4,9 +4,15 @@ A refactored version of the `openai-kira` specification. Use redis or a file dat
 
 Building ChatBot with LLMs.Using `async` requests.
 
-There are comprehensive examples of use in `test/usage_tmp.py`.
-
 > Contributors welcomed.
+
+## Features
+
+* safely cut context
+* usage
+* async request api
+* multi-Api Key load
+* self-design callback
 
 ## Basic Use
 
@@ -26,12 +32,12 @@ llm_kira.setting.proxyUrl = None  # "127.0.0.1"
 
 # Plugin
 llm_kira.setting.webServerUrlFilter = False
-llm_kira.setting.webServerStopSentence = ["广告", "营销号"]
+llm_kira.setting.webServerStopSentence = ["广告", "营销号"]  # 有默认值
 ```
 
 ## Demo
 
-SEE `./test` for More Exp!
+**More examples of use in `test/test.py`.**
 
 Take `openai` as an example
 
@@ -71,12 +77,13 @@ chat_client = receiver.ChatBot(profile=conversation,
 async def chat():
     promptManger = receiver.PromptManger(profile=conversation,
                                          connect_words="\n",
+                                         template="Templates, custom prefixes"
                                          )
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是 1596321"))
+    promptManger.insert(item=PromptItem(start=conversation.start_name, text="My id is 1596321"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
                                          prompt=promptManger,
                                          predict_tokens=500,
-                                         increase="外部增强:每句话后面都要带 “喵”",
+                                         increase="External enhancements, or searched result",
                                          )
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
@@ -86,14 +93,15 @@ async def chat():
     print(f"---{response.llm.time}---")
 
     promptManger.clean()
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是多少？"))
+    promptManger.insert(item=PromptItem(start=conversation.start_name, text="Whats my id？"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
                                          prompt=promptManger,
                                          predict_tokens=500,
                                          increase="外部增强:每句话后面都要带 “喵”",
                                          # parse_reply=None
                                          )
-    _info = "parse_reply 回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。",
+    _info = "parse_reply 函数回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。"
+    _info2 = "The parse_reply function callback handles the reply fields of llm, such as list, etc. Pass in list and pass out str for the reply."
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
