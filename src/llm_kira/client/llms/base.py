@@ -57,7 +57,8 @@ class LlmBase(ABC):
     def model_context_size(model_name: str) -> int:
         pass
 
-    def parse_reply(self, reply: list) -> str:
+    @abstractmethod
+    def parse_reply(self, reply: list[str]) -> str:
         if reply:
             return str(reply[0])
         else:

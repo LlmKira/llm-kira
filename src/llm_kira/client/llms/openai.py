@@ -141,6 +141,10 @@ class OpenAi(LlmBase):
         """Return type of llm."""
         return "unknown"
 
+    def parse_reply(self, reply: list[str]) -> str:
+        """处理解码后的列表"""
+        return "".join(reply)
+
     def resize_context(self, text: str, token: int) -> str:
         token = token if token > 5 else 5
         while self.tokenizer(text) > token:
