@@ -3,15 +3,14 @@
 # @FileName: plugins.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-
+import tiktoken
 from loguru import logger
-from transformers import GPT2TokenizerFast
 
 from ....utils import setting
 from ....utils import network
 from ....utils.chat import Utils
 
-gpt_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+gpt_tokenizer = tiktoken.get_encoding("gpt2")
 
 netTool = network
 

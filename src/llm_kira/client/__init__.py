@@ -4,7 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 
-from . import llm
+from .llms import openai
 from .enhance import Support
 from .agent import Conversation
 from .anchor import ChatBot, MemoryManger, PromptManger, Preset

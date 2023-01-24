@@ -4,22 +4,22 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import asyncio
-import random
 
 # 最小单元测试
-import src.llm_kira as openai_kira
+import src.llm_kira as llm_kira
 import setting
 from src.llm_kira.client import Optimizer
+from src.llm_kira.client.llms.openai import OpenAiParam
 from src.llm_kira.client.types import PromptItem
 
-print(openai_kira.RedisConfig())
+print(llm_kira.RedisConfig())
 openaiApiKey = setting.ApiKey
 openaiApiKey: list[str]
 
 
 async def completion():
     try:
-        response = await openai_kira.openai.Completion(api_key=openaiApiKey, proxy_url="").create(
+        response = await llm_kira.openai.Completion(api_key=openaiApiKey, proxy_url="").create(
             model="text-davinci-003",
             prompt="Say this is a test",
             temperature=0,
@@ -35,18 +35,21 @@ async def completion():
             print("NO", e)
 
 
-receiver = openai_kira.client
+receiver = llm_kira.client
 conversation = receiver.Conversation(
     start_name="Human:",
     restart_name="AI:",
     conversation_id=10093,  # random.randint(1, 10000000),
 )
 
-llm = receiver.llm.OpenAi(profile=conversation,
-                          api_key=openaiApiKey,
-                          token_limit=3700,
-                          no_penalty=True,
-                          call_func=None)
+llm = llm_kira.client.llms.OpenAi(
+    profile=conversation,
+    api_key=openaiApiKey,
+    token_limit=3700,
+    auto_penalty=False,
+    call_func=None,
+)
+
 mem = receiver.MemoryManger(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                memory_manger=mem,
@@ -59,35 +62,37 @@ async def chat():
                                          connect_words="\n",
                                          )
     promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是 1596321"))
-    response = await chat_client.predict(model="text-davinci-003",
+    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
                                          prompt=promptManger,
                                          predict_tokens=500,
-                                         increase="外部增强:每句话后面都要带 “喵”"
+                                         increase="外部增强:每句话后面都要带 “喵”",
                                          )
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
     print(f"usage:{response.llm.usage}")
+    print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
 
     promptManger.clean()
     promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是多少？"))
-    response = await chat_client.predict(model="text-davinci-003",
+    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
                                          prompt=promptManger,
                                          predict_tokens=500,
                                          increase="外部增强:每句话后面都要带 “喵”",
-                                         info="parse_reply 回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。",
-                                         info2="其余多余参数会传入 llm 的额外参数中，按照Api 文档传入，比如 openai 的 top 参数什么的"
+                                         # parse_reply=None
                                          )
+    _info = "parse_reply 回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。",
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
     print(f"usage:{response.llm.usage}")
+    print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
 
 
 async def Moderation():
-    response = await openai_kira.openai.Moderations(api_key=openaiApiKey).create(input="Kill You！")
+    response = await llm_kira.openai.Moderations(api_key=openaiApiKey).create(input="Kill You！")
     print(response)
 
 
@@ -104,7 +109,7 @@ async def Sentiment():
     ]
     for item in _sentence_list:
         print(item)
-        response = openai_kira.utils.chat.Utils.sentiment(item)
+        response = llm_kira.utils.chat.Utils.sentiment(item)
         print(response)
 
 
@@ -115,7 +120,7 @@ async def KeyParse():
     ]
     for item in _sentence_list:
         print(item)
-        response = openai_kira.utils.chat.Utils.keyPhraseExtraction(item)
+        response = llm_kira.utils.chat.Utils.keyPhraseExtraction(item)
         print(response)
 
 
@@ -126,7 +131,7 @@ async def GPT2():
     ]
     for item in _sentence_list:
         print(item)
-        response = openai_kira.utils.chat.Utils.get_gpt2_tokenizer().encode(item)
+        response = llm_kira.utils.chat.Utils.get_gpt2_tokenizer().encode(item)
         print(response)
 
 

@@ -6,11 +6,12 @@
 from typing import Union, Callable
 
 # Tool
-from loguru import logger
 
 from . import Optimizer
 from .enhance import Support
-from .llm import LlmBase, LlmReturn
+from .llms.base import LlmBaseParam
+from .llms.openai import LlmBase
+from .types import LlmReturn
 from ..utils.chat import Detect
 from ..utils.data import MsgFlow
 # 基于 Completion 上层
@@ -68,7 +69,7 @@ class Preset(object):
             ]
 
     def role(self, role: str = "",
-             name: str = "",
+             restart_name: str = "",
              character: str = "",
              prompt_iscode: bool = False,
              lang: str = "ZH"
@@ -78,13 +79,13 @@ class Preset(object):
         lang = lang.upper()
         role = ""
         if lang == "ZH":
-            role = f"{name} 是一个 {character} 的少女，聪明伶俐，经常帮我"
+            role = f"{restart_name} 是一个 {character} 的少女，聪明伶俐，经常帮我"
             role = self.add_tail(prompt_iscode, sentence=role, tail="是编程大师冠军,")
         elif lang == "EN":
-            role = f"{name} is a {character} girl, always help me"
+            role = f"{restart_name} is a {character} girl, always help me"
             role = self.add_tail(prompt_iscode, sentence=role, tail="a Master Programmer Champion,")
         elif lang == "JA":
-            role = f"{name}は{character}の女の子です。 しばし手伝って"
+            role = f"{restart_name}は{character}の女の子です。 しばし手伝って"
             role = self.add_tail(prompt_iscode, sentence=role, tail="マスター プログラマー チャンピオンになる,")
         return f"{role} "
 
@@ -103,10 +104,10 @@ class Preset(object):
             head = f"{start_name} 正在和 {restart_name} 聊天"
             head = self.add_tail(prompt_iscode, sentence=head, tail="提供编程指导,")
         elif lang == "EN":
-            head = f"{start_name} is a {restart_name} girl, always help me"
+            head = f"{start_name} chat with {restart_name} "
             head = self.add_tail(prompt_iscode, sentence=head, tail="Provide programming guidance,")
         elif lang == "JA":
-            head = f"{start_name}は{restart_name}の女の子です。 しばし手伝って"
+            head = f"{start_name}と{restart_name}の会話 "
             head = self.add_tail(prompt_iscode, sentence=head, tail="プログラミング指導を提供する,")
         return f"{head} "
 
@@ -114,12 +115,14 @@ class Preset(object):
 class PromptManger(object):
     def __init__(self,
                  profile: Conversation,
+                 template: str = None,
                  connect_words: str = "\n"
                  ):
         self.profile = profile
         self.__start_name = profile.start_name
         self.__restart_name = profile.restart_name
         self.__memory = []
+        self.__template = template
         self.__connect_words = connect_words
 
     @property
@@ -148,7 +151,7 @@ class PromptManger(object):
         for item in self.__memory:
             item: PromptItem
             _result.append(f"{item.start}:{item.text}")
-        return self.__connect_words.join(_result)
+        return self.__connect_words.join(_result), self.__template
 
 
 class MemoryManger(object):
@@ -211,41 +214,42 @@ class ChatBot(object):
 
     async def predict(self,
                       prompt: PromptManger,
-                      role: str = None,
-                      head: str = None,
                       increase: Union[str, Support] = "",
                       predict_tokens: int = 100,
                       parse_reply: Callable[[list], str] = None,
-                      **kwargs
+                      llm_param: LlmBaseParam = None,
                       ) -> ChatBotReturn:
         self.prompt = prompt
         if parse_reply:
             self.llm.parse_reply = parse_reply
         if predict_tokens > self.llm.token_limit():
             raise Exception("Why your predict token > set token limit?")
-
-        prompt: str = self.prompt.run()
+        prompt, template = self.prompt.run()
 
         # Lang
         prompt_lang: str = Detect.get_text_language(sentence=prompt)
         prompt_iscode: bool = Detect.isCode(sentence=prompt)
         prompt_preset = Preset(self.profile)
+        _template = []
 
         # Role
-        if role is None:
+        if template is None:
             # Character
             character = prompt_preset.character(lang=prompt_lang)
-            _role = prompt_preset.role(name=self.profile.start_name,
+            _role = prompt_preset.role(restart_name=self.profile.restart_name,
                                        character=",".join(character),
                                        prompt_iscode=prompt_iscode,
                                        lang=prompt_lang)
             role = f"{self.profile.start_name}:{_role}.\n"
+            _template.append(role)
+
         # Head
-        if head is None:
+        if template is None:
             head = prompt_preset.head(prompt_iscode=prompt_iscode,
                                       lang=prompt_lang)
-        _header = f"{role}{head}\n"
-
+            _template.append(head)
+        if template is None:
+            template = ''.join(_template)
         # Restart
         _prompt_s = [f"{prompt}"]
 
@@ -266,7 +270,7 @@ class ChatBot(object):
             predict_tokens +
             len(_prompt_memory) +
             self.llm.tokenizer(self.profile.start_name) +
-            self.llm.tokenizer(_header + "".join(_prompt_s)) +
+            self.llm.tokenizer(template + "".join(_prompt_s)) +
             self.llm.tokenizer(_appendix)
         )
 
@@ -294,10 +298,10 @@ class ChatBot(object):
         _mk = _limit if _limit > 0 else 0
         while self.llm.tokenizer(_prompt) > _mk:
             _prompt = _prompt[4:]
-        _prompt = _header + _prompt
+        _prompt = template + _prompt
 
         # GET
-        llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, **kwargs)
+        llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, llm_param=llm_param)
         llm_result: LlmReturn
 
         # 解析结果返回结果

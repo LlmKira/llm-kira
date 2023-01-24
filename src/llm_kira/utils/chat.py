@@ -14,9 +14,9 @@ from ..client.text_analysis_tools.api.summarization.tfidf_summarization import T
 from ..client.text_analysis_tools.api.text_similarity.simhash import SimHashSimilarity
 from ..client.text_analysis_tools.api.text_similarity.cosion import CosionSimilarity
 from ..client.text_analysis_tools.api.keyphrase.keyphrase import KeyPhraseExtraction
-from transformers import GPT2TokenizerFast
+import tiktoken
 
-gpt_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+gpt_tokenizer = tiktoken.get_encoding("gpt2")
 
 
 class Detect(object):

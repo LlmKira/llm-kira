@@ -70,6 +70,10 @@ class Completion(object):
         }
         _api_config.update(params)
         _api_config.update(kwargs)
+        _api_config = {key: item
+                       for key, item in _api_config.items()
+                       if key in api["params"].keys()
+                       }
         # 返回请求
         return await request(
             "POST",
