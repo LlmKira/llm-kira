@@ -122,7 +122,7 @@ class PromptManger(object):
         self.__start_name = profile.start_name
         self.__restart_name = profile.restart_name
         self.__memory = []
-        self.__template = template
+        self.template = template
         self.__connect_words = connect_words
 
     @property
@@ -151,7 +151,7 @@ class PromptManger(object):
         for item in self.__memory:
             item: PromptItem
             _result.append(f"{item.start}:{item.text}")
-        return self.__connect_words.join(_result), self.__template
+        return self.__connect_words.join(_result), self.template
 
 
 class MemoryManger(object):
