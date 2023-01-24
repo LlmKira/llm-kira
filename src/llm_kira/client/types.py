@@ -18,7 +18,7 @@ class MemeryItem(BaseModel):
 class LlmReturn(BaseModel):
     model_flag: Optional[str]
     prompt: str
-    reply: list[str]
+    reply: list
     usage: int = 0
     time: int = int(time.time())
     raw: dict
