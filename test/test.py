@@ -13,6 +13,7 @@ from src.llm_kira.client.llms.openai import OpenAiParam
 from src.llm_kira.client.types import PromptItem
 
 print(llm_kira.RedisConfig())
+
 openaiApiKey = setting.ApiKey
 openaiApiKey: list[str]
 
@@ -137,7 +138,7 @@ async def GPT2():
 
 async def Web():
     config = receiver.enhance.PluginConfig(server=["https://www.google.com/search?q={}"],
-                                           text="吴京是谁？")
+                                           text="任何邪恶，终将？")
     h0 = await receiver.enhance.WebSearch(
         config=config).run()
     h1 = await receiver.enhance.PluginSystem(plugin_table={"time": ""}, prompt="what time now?").run()
