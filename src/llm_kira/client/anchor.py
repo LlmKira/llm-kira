@@ -295,10 +295,9 @@ class ChatBot(object):
 
         # Resize
         _limit = self.llm.token_limit() - _extra_token
-        _mk = _limit if _limit > 0 else 0
-        while self.llm.tokenizer(_prompt) > _mk:
-            _prompt = _prompt[4:]
+        _prompt = self.llm.resize_context(_prompt, _limit)
         _prompt = template + _prompt
+        _prompt = self.llm.resize_context(_prompt, self.llm.token_limit())
 
         # GET
         llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, llm_param=llm_param)

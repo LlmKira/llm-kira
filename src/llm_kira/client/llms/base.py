@@ -49,6 +49,10 @@ class LlmBase(ABC):
     def tokenizer(self, text):
         return len(text)
 
+    @abstractmethod
+    def resize_context(self, text: str, token: int) -> str:
+        return text[:token]
+
     @staticmethod
     def model_context_size(model_name: str) -> int:
         pass

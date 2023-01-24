@@ -141,6 +141,12 @@ class OpenAi(LlmBase):
         """Return type of llm."""
         return "unknown"
 
+    def resize_context(self, text: str, token: int) -> str:
+        token = token if token > 5 else 5
+        while self.tokenizer(text) > token:
+            text = text[4:]
+        return text
+
     @staticmethod
     def model_context_size(model_name: str) -> int:
         if model_name == "text-davinci-003":
