@@ -63,6 +63,7 @@ async def chat():
     promptManger = receiver.PromptManger(profile=conversation,
                                          connect_words="\n",
                                          )
+    promptManger.insert(item=PromptItem(start="Neko", text="你好"))
     promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是 1596321"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
                                          prompt=promptManger,

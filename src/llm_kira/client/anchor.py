@@ -154,8 +154,9 @@ class PromptManger(object):
     def run_template(self):
         return self.template
 
-    def run(self
-            ):
+    def run(self,
+            raw_list: bool = False
+            ) -> Union[str, list]:
         _result = []
         start = ""
         for item in self.__memory:
@@ -163,6 +164,8 @@ class PromptManger(object):
             if item.start:
                 start = f"{item.start}:"
             _result.append(f"{start}{item.text}")
+        if raw_list:
+            return _result
         return self.__connect_words.join(_result)
 
 
@@ -236,8 +239,25 @@ class ChatBot(object):
             self.llm.parse_reply = parse_reply
         if predict_tokens > self.llm.get_token_limit():
             raise Exception("Why your predict token > set token limit?")
-        prompt: str = self.prompt.run()
+        prompt: str = self.prompt.run(raw_list=False)
+        prompt_raw: list = self.prompt.run(raw_list=True)
+        prompt_raw = list(reversed(prompt_raw))
+        __name = self.profile.start_name
+        __content_list = []
+        for item in prompt_raw:
+            if ":" in item:
+                item: str
+                _item_split = item.split(":", 1)
+                __name = _item_split[0]
+                __content = _item_split[1]
+            else:
+                __content = item
+            __content_list.append(__content)
+        prompt_index = f"{__name}:{','.join(__content_list)}"
+
+        # Template
         template: str = self.prompt.run_template()
+
         # Lang
         prompt_lang: str = Detect.get_text_language(sentence=prompt)
         prompt_iscode: bool = Detect.isCode(sentence=prompt)
@@ -316,10 +336,10 @@ class ChatBot(object):
         llm_result: LlmReturn
 
         # 解析结果返回结果
-        self.memory_manger.save_context(ask=prompt,
+        self.memory_manger.save_context(ask=prompt_index,
                                         reply=f"{self.profile.restart_name}:{self.llm.parse_reply(llm_result.reply)}",
                                         no_head=True)
         return ChatBotReturn(conversation_id=f"{self.profile.conversation_id}",
                              llm=llm_result,
-                             ask=prompt,
+                             ask=prompt_index,
                              reply=self.llm.parse_reply(llm_result.reply))
