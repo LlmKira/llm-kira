@@ -243,24 +243,22 @@ class ChatBot(object):
 
         # prompt 重整
         prompt_raw: list = self.prompt.run(raw_list=True)
-        prompt_raw = list(reversed(prompt_raw))
-        __name = self.profile.start_name
+        prompt_raw_index = list(reversed(prompt_raw))[0]
         __extra_memory = []
-        __content_list = []
+        __content_list = [prompt_raw_index]
         for item in prompt_raw:
             index = round(len(item) / 3) if round(len(item) / 3) > 3 else 10
             if ":" in item[:index]:
                 __extra_memory.append(item)
             else:
-                __content = item
-                __content_list.append(__content)
+                __content_list.append(item)
             if len(__extra_memory) == 2:
                 self.memory_manger.save_context(ask=__extra_memory[0],
                                                 reply=__extra_memory[1],
                                                 no_head=True)
                 __extra_memory.clear()
 
-        prompt_index = f"{__name}:{','.join(__content_list)}"
+        prompt_index = ','.join(__content_list)
 
         # Template
         template: str = self.prompt.run_template()
