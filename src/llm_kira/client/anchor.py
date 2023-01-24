@@ -157,9 +157,12 @@ class PromptManger(object):
     def run(self
             ):
         _result = []
+        start = ""
         for item in self.__memory:
             item: PromptItem
-            _result.append(f"{item.start}:{item.text}")
+            if item.start:
+                start = f"{item.start}:"
+            _result.append(f"{start}{item.text}")
         return self.__connect_words.join(_result)
 
 
