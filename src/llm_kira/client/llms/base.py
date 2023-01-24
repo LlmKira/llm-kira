@@ -7,7 +7,7 @@ import json
 import time
 import os
 from abc import abstractmethod, ABC
-from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping
+from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 
 from loguru import logger
 from pydantic import BaseModel
@@ -58,7 +58,7 @@ class LlmBase(ABC):
         pass
 
     @abstractmethod
-    def parse_reply(self, reply: list) -> str:
+    def parse_reply(self, reply: List[str]) -> str:
         if reply:
             return str(reply[0])
         else:

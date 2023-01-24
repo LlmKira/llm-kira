@@ -48,9 +48,10 @@ import llm_kira
 from llm_kira.client import Optimizer
 from llm_kira.client.types import PromptItem
 from llm_kira.client.llms.openai import OpenAiParam
+from typing import List
 
 openaiApiKey = ["key1", "key2"]
-openaiApiKey: list[str]
+openaiApiKey: List[str]
 
 receiver = llm_kira.client
 conversation = receiver.Conversation(

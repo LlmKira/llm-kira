@@ -6,6 +6,7 @@
 """
 优化器
 """
+from typing import List
 
 import numpy
 
@@ -29,7 +30,7 @@ def random_string(length):
     return result
 
 
-def convert_msgflow_to_list(msg_list: list[Memory_Flow],
+def convert_msgflow_to_list(msg_list: List[Memory_Flow],
                             sign: bool = True
                             ) -> list:
     """
@@ -56,7 +57,7 @@ class MatrixPoint(Point):
     def __init__(self,
                  tokenizer,
                  prompt: str = "",
-                 memory: list[Memory_Flow] = None,
+                 memory: List[Memory_Flow] = None,
                  attention: int = 3,
                  # start_token: int = 0,
                  extra_token: int = 0,
@@ -178,7 +179,7 @@ class SinglePoint(Point):
     def __init__(self,
                  tokenizer,
                  prompt: str = "",
-                 memory: list[Memory_Flow] = None,
+                 memory: List[Memory_Flow] = None,
                  attention: int = 3,
                  # start_token: int = 0,
                  extra_token: int = 0,

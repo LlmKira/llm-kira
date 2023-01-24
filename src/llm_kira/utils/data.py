@@ -6,7 +6,7 @@
 import ast
 import time
 import json
-from typing import Union, Optional
+from typing import Union, Optional, List
 from ..client.types import Memory_Flow, MemoryItem
 from ..utils import setting
 from pydantic import BaseModel
@@ -236,11 +236,11 @@ class MsgFlow(object):
             _message_streams["msg"] = [content]
         self._set_uid(self.uid, _message_streams)
 
-    def read(self) -> Optional[list[Memory_Flow]]:
+    def read(self) -> Optional[List[Memory_Flow]]:
         message_streams = self._get_uid(self.uid)
         if "msg" in message_streams:
             _msg = message_streams["msg"]
-            _msg: list[Memory_Flow]
+            _msg: List[Memory_Flow]
             return _msg
         else:
             return []

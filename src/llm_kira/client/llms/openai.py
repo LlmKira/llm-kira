@@ -8,7 +8,7 @@ import time
 import json
 import random
 import tiktoken
-from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping
+from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -141,7 +141,7 @@ class OpenAi(LlmBase):
         """Return type of llm."""
         return "unknown"
 
-    def parse_reply(self, reply: list) -> str:
+    def parse_reply(self, reply: List[str]) -> str:
         """处理解码后的列表"""
         return "".join(reply)
 

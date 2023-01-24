@@ -25,6 +25,7 @@ elara = "^0.5.4"
 openai-async = "^0.0.2"
 numpy = "^1.24.1"
 tiktoken = "^0.1.2"
+scikit-learn = "^1.2.0"
 
 
 [build-system]

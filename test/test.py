@@ -4,6 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import asyncio
+from typing import List
 
 # 最小单元测试
 import src.llm_kira as llm_kira
@@ -15,7 +16,7 @@ from src.llm_kira.client.types import PromptItem
 print(llm_kira.RedisConfig())
 
 openaiApiKey = setting.ApiKey
-openaiApiKey: list[str]
+openaiApiKey: List[str]
 
 
 async def completion():
@@ -147,9 +148,9 @@ async def Web():
 
 
 # asyncio.run(completion())
-# asyncio.run(chat())
+asyncio.run(chat())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())
 # asyncio.run(GPT2())
-asyncio.run(Web())
+# asyncio.run(Web())

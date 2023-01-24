@@ -3,7 +3,7 @@
 # @FileName: anchor.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from typing import Union, Callable
+from typing import Union, Callable, List
 
 # Tool
 
@@ -143,7 +143,7 @@ class PromptManger(object):
         self.__memory = []
         return True
 
-    def override(self, item: list[PromptItem]):
+    def override(self, item: List[PromptItem]):
         self.__memory = []
         for index in item:
             self.__memory.append(index)
@@ -181,7 +181,7 @@ class MemoryManger(object):
         :param plain_text: 是否转化为列表
         """
         _result = self._MsgFlow.read()
-        _result: list[Memory_Flow]
+        _result: List[Memory_Flow]
         if plain_text:
             _result = convert_msgflow_to_list(msg_list=_result, sign=sign)
         return _result

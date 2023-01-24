@@ -5,7 +5,7 @@
 # @Github    ：sudoskys
 import time
 from typing import Optional
-
+from typing import List
 from pydantic import BaseModel
 
 
@@ -18,7 +18,7 @@ class MemeryItem(BaseModel):
 class LlmReturn(BaseModel):
     model_flag: Optional[str]
     prompt: str
-    reply: list
+    reply: List[str]
     usage: int = 0
     time: int = int(time.time())
     raw: dict
