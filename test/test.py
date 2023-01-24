@@ -136,17 +136,19 @@ async def GPT2():
 
 
 async def Web():
-    h0 = await receiver.enhance.WebSearch(config=receiver.enhance.PluginConfig(server=["baidu.com?q={}"],
-                                                                               text="？？？？？")).run()
-    h1 = await receiver.enhance.PluginSystem(plugin_table={"time": ""}, prompt="time").run()
+    config = receiver.enhance.PluginConfig(server=["https://www.google.com/search?q={}"],
+                                           text="吴京是谁？")
+    h0 = await receiver.enhance.WebSearch(
+        config=config).run()
+    h1 = await receiver.enhance.PluginSystem(plugin_table={"time": ""}, prompt="what time now?").run()
     print(h0)
     print(h1)
 
 
 # asyncio.run(completion())
-asyncio.run(chat())
+# asyncio.run(chat())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())
 # asyncio.run(GPT2())
-# asyncio.run(Web())
+asyncio.run(Web())
