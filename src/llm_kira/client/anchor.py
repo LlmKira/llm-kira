@@ -5,6 +5,8 @@
 # @Github    ：sudoskys
 from typing import Union, Callable, List
 
+from loguru import logger
+
 # Tool
 
 from . import Optimizer
@@ -158,6 +160,9 @@ class PromptManger(object):
             raw_list: bool = False
             ) -> Union[str, list]:
         _result = []
+        if not self.__memory:
+            logger.warning("Your prompt seems empty!")
+            self.__memory.append("Me:Your say empty!")
         start = ""
         for item in self.__memory:
             item: PromptItem
