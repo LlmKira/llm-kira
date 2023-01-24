@@ -115,6 +115,7 @@ class Preset(object):
 class PromptManger(object):
     def __init__(self,
                  profile: Conversation,
+                 prompt_type: str = "chat",
                  template: str = None,
                  connect_words: str = "\n"
                  ):
@@ -122,6 +123,7 @@ class PromptManger(object):
         self.__start_name = profile.start_name
         self.__restart_name = profile.restart_name
         self.__memory = []
+        self.type = prompt_type
         self.template = template
         self.__connect_words = connect_words
 
@@ -132,6 +134,10 @@ class PromptManger(object):
     @property
     def start_name(self):
         return self.__start_name
+
+    @property
+    def type(self):
+        return self.type
 
     def clean(self):
         self.__memory = []
