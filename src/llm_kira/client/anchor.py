@@ -240,19 +240,26 @@ class ChatBot(object):
         if predict_tokens > self.llm.get_token_limit():
             raise Exception("Why your predict token > set token limit?")
         prompt: str = self.prompt.run(raw_list=False)
+
+        # prompt 重整
         prompt_raw: list = self.prompt.run(raw_list=True)
         prompt_raw = list(reversed(prompt_raw))
         __name = self.profile.start_name
+        __extra_memory = []
         __content_list = []
         for item in prompt_raw:
-            if ":" in item:
-                item: str
-                _item_split = item.split(":", 1)
-                __name = _item_split[0]
-                __content = _item_split[1]
+            index = round(len(item) / 3) if round(len(item) / 3) > 3 else 10
+            if ":" in item[:index]:
+                __extra_memory.append(item)
             else:
                 __content = item
-            __content_list.append(__content)
+                __content_list.append(__content)
+            if len(__extra_memory) == 2:
+                self.memory_manger.save_context(ask=__extra_memory[0],
+                                                reply=__extra_memory[1],
+                                                no_head=True)
+                __extra_memory.clear()
+
         prompt_index = f"{__name}:{','.join(__content_list)}"
 
         # Template
