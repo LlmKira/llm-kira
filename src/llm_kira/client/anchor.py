@@ -123,7 +123,7 @@ class PromptManger(object):
         self.__start_name = profile.start_name
         self.__restart_name = profile.restart_name
         self.__memory = []
-        self.type = prompt_type
+        self.prompt_type = prompt_type
         self.template = template
         self.__connect_words = connect_words
 
@@ -137,7 +137,7 @@ class PromptManger(object):
 
     @property
     def type(self):
-        return self.type
+        return self.prompt_type
 
     def clean(self):
         self.__memory = []
@@ -151,13 +151,16 @@ class PromptManger(object):
     def insert(self, item: PromptItem):
         self.__memory.append(item)
 
+    def run_template(self):
+        return self.template
+
     def run(self
             ):
         _result = []
         for item in self.__memory:
             item: PromptItem
             _result.append(f"{item.start}:{item.text}")
-        return self.__connect_words.join(_result), self.template
+        return self.__connect_words.join(_result)
 
 
 class MemoryManger(object):
@@ -230,8 +233,8 @@ class ChatBot(object):
             self.llm.parse_reply = parse_reply
         if predict_tokens > self.llm.get_token_limit():
             raise Exception("Why your predict token > set token limit?")
-        prompt, template = self.prompt.run()
-
+        prompt: str = self.prompt.run()
+        template: str = self.prompt.run_template()
         # Lang
         prompt_lang: str = Detect.get_text_language(sentence=prompt)
         prompt_iscode: bool = Detect.isCode(sentence=prompt)
