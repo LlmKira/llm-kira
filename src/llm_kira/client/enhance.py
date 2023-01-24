@@ -38,9 +38,8 @@ class PluginSystem(Support):
 
 
 class WebSearch(Support):
-    def __init__(self, config: PluginConfig, prompt: str):
+    def __init__(self, config: PluginConfig):
         self.config = config
-        self.prompt = prompt
 
     async def run(self) -> str:
         _return = await Search().process(params=self.config)

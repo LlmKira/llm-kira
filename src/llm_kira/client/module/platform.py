@@ -3,6 +3,7 @@
 # @FileName: module.py
 # @Software: PyCharm
 # @Github    ：sudoskys
+from typing import Union
 
 from pydantic import BaseModel
 from loguru import logger
@@ -15,7 +16,7 @@ class PluginParam(BaseModel):
 
 class PluginConfig(BaseModel):
     text: str = ""
-    server: list = {}
+    server: Union[list, str] = ""
 
 
 class ChatPlugin(object):
