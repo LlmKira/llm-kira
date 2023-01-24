@@ -158,11 +158,11 @@ class PromptManger(object):
 
     def run(self,
             raw_list: bool = False
-            ) -> Union[str, list]:
+            ) -> Union[str, List[str]]:
         _result = []
         if not self.__memory:
             logger.warning("Your prompt seems empty!")
-            self.__memory.append("Me:Your say empty!")
+            self.__memory.append(PromptItem(start="Repeat", text="Warn,Your text seems empty!"))
         start = ""
         for item in self.__memory:
             item: PromptItem
