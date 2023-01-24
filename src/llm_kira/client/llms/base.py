@@ -58,7 +58,7 @@ class LlmBase(ABC):
         pass
 
     @abstractmethod
-    def parse_reply(self, reply: list[str]) -> str:
+    def parse_reply(self, reply: list) -> str:
         if reply:
             return str(reply[0])
         else:

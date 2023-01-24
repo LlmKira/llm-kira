@@ -141,7 +141,7 @@ class OpenAi(LlmBase):
         """Return type of llm."""
         return "unknown"
 
-    def parse_reply(self, reply: list[str]) -> str:
+    def parse_reply(self, reply: list) -> str:
         """处理解码后的列表"""
         return "".join(reply)
 
