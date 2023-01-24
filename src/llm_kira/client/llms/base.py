@@ -42,7 +42,7 @@ class LlmBase(ABC):
         return "unknown"
 
     @abstractmethod
-    def token_limit(self) -> int:
+    def get_token_limit(self) -> int:
         return 2000
 
     @abstractmethod

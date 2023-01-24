@@ -222,7 +222,7 @@ class ChatBot(object):
         self.prompt = prompt
         if parse_reply:
             self.llm.parse_reply = parse_reply
-        if predict_tokens > self.llm.token_limit():
+        if predict_tokens > self.llm.get_token_limit():
             raise Exception("Why your predict token > set token limit?")
         prompt, template = self.prompt.run()
 
@@ -279,7 +279,7 @@ class ChatBot(object):
             prompt=prompt,
             memory=_prompt_memory,
             extra_token=_extra_token,
-            token_limit=self.llm.token_limit(),
+            token_limit=self.llm.get_token_limit(),
             tokenizer=self.llm.tokenizer,
         ).run()
 
@@ -294,10 +294,10 @@ class ChatBot(object):
             _prompt = _prompt.replace("\n\n", "\n")
 
         # Resize
-        _limit = self.llm.token_limit() - _extra_token
+        _limit = self.llm.get_token_limit() - _extra_token
         _prompt = self.llm.resize_context(_prompt, _limit)
         _prompt = template + _prompt
-        _prompt = self.llm.resize_context(_prompt, self.llm.token_limit())
+        _prompt = self.llm.resize_context(_prompt, self.llm.get_token_limit())
 
         # GET
         llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, llm_param=llm_param)

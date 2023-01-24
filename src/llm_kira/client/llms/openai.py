@@ -90,8 +90,8 @@ class OpenAi(LlmBase):
         :param call_func: 回调
         :param auto_penalty: 不使用自动惩罚参数调整
         """
-        self.__auto_penalty = auto_penalty
-        self.__profile = profile
+        self.auto_penalty = auto_penalty
+        self.profile = profile
         # if api_key is None:
         #     api_key = setting.openaiApiKey
         if isinstance(api_key, list):
@@ -103,13 +103,13 @@ class OpenAi(LlmBase):
         self.__api_key = api_key
         if not api_key:
             raise RuntimeError("NO KEY")
-        self.__start_sequence = self.__profile.start_name
-        self.__restart_sequence = self.__profile.restart_name
+        self.__start_sequence = self.profile.start_name
+        self.__restart_sequence = self.profile.restart_name
         self.__call_func = call_func
-        self.__token_limit = token_limit
+        self.token_limit = token_limit
 
-    def token_limit(self) -> int:
-        return self.__token_limit
+    def get_token_limit(self) -> int:
+        return self.token_limit
 
     def tokenizer(self, text) -> int:
         gpt_tokenizer = tiktoken.get_encoding("gpt2")
@@ -189,14 +189,14 @@ class OpenAi(LlmBase):
         _request_arg.update(model=llm_param.model_name,
                             prompt=str(prompt),
                             max_tokens=predict_tokens,
-                            user=str(self.__profile.get_conversation_hash()),
-                            stop=[f"{self.__profile.start_name}:",
-                                  f"{self.__profile.restart_name}:",
-                                  f"{self.__profile.start_name}：",
-                                  f"{self.__profile.restart_name}："],
+                            user=str(self.profile.get_conversation_hash()),
+                            stop=[f"{self.profile.start_name}:",
+                                  f"{self.profile.restart_name}:",
+                                  f"{self.profile.start_name}：",
+                                  f"{self.profile.restart_name}："],
                             )
         # Penalty
-        if self.__auto_penalty:
+        if self.auto_penalty:
             # THINK ABOUT HOT CAKE
             _frequency_penalty, _presence_penalty, _temperature = Detect().gpt_tendency_arg(prompt=prompt)
             # SOME HOT CAKE
