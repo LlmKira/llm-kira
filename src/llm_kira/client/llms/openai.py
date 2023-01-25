@@ -182,17 +182,18 @@ class OpenAi(LlmBase):
         """
 
         _request_arg = {
-            "temperature": 0.9,
+            "temperature": float(0.9),
             "logit_bias": {},
-            "top_p": 1,
-            "n": 1
+            "top_p": float(1),
+            "n": int(1)
         }
         # Kwargs
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
-        _request_arg.update(model=llm_param.model_name,
+
+        _request_arg.update(model=str(llm_param.model_name),
                             prompt=str(prompt),
-                            max_tokens=predict_tokens,
+                            max_tokens=int(predict_tokens),
                             user=str(self.profile.get_conversation_hash()),
                             stop=[f"{self.profile.start_name}:",
                                   f"{self.profile.restart_name}:",

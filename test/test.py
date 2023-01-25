@@ -161,7 +161,7 @@ async def Web():
     print(h1)
 
 # asyncio.run(completion())
-# asyncio.run(chat())
+asyncio.run(chat())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())
