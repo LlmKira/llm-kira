@@ -75,9 +75,11 @@ async def chat():
     # 大型数据对抗测试
     # promptManger.insert(item=PromptItem(start="Neko", text=random_string(4000)))
     # promptManger.insert(item=PromptItem(start="Neko", text=random_string(500)))
+
     # 多 prompt 对抗测试
-    promptManger.insert(item=PromptItem(start="Neko", text="喵喵喵"))
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是 1596321"))
+    # promptManger.insert(item=PromptItem(start="Neko", text="喵喵喵"))
+
+    promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的账号是 2216444"))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
         prompt=promptManger,
@@ -91,7 +93,7 @@ async def chat():
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
     promptManger.clean()
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是多少？"))
+    promptManger.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
                                          prompt=promptManger,
                                          predict_tokens=500,
@@ -159,6 +161,7 @@ async def Web():
     h1 = await receiver.enhance.PluginSystem(plugin_table={"time": ""}, prompt="what time now?").run()
     print(h0)
     print(h1)
+
 
 # asyncio.run(completion())
 asyncio.run(chat())
