@@ -26,7 +26,7 @@ openai-async = "^0.0.2"
 numpy = "^1.24.1"
 tiktoken = "^0.1.2"
 scikit-learn = "^1.2.0"
-pycurl = "^7.45.2"
+pycurl = "^7.43.0.6"
 
 
 [build-system]

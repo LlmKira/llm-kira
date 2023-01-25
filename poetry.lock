@@ -824,13 +824,13 @@ files = [
 
 [[package]]
 name = "pycurl"
-version = "7.45.2"
+version = "7.43.0.6"
 description = "PycURL -- A Python Interface To The cURL library"
 category = "main"
 optional = false
 python-versions = ">=3.5"
 files = [
-    {file = "pycurl-7.45.2.tar.gz", hash = "sha256:5730590be0271364a5bddd9e245c9cc0fb710c4cbacbdd95264a3122d23224ca"},
+    {file = "pycurl-7.43.0.6.tar.gz", hash = "sha256:8301518689daefa53726b59ded6b48f33751c383cf987b0ccfbbc4ed40281325"},
 ]
 
 [[package]]
@@ -1313,4 +1313,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "96fcdae853e82f44b1ff2a38d4d847fde27546e876908a046fc3046cec1eeb38"
+content-hash = "6dceeb347b8ece77f5081b3d1ff7f8f6fa228c56f8c251b7b5c11afeef11b4c5"
