@@ -19,6 +19,15 @@ openaiApiKey = setting.ApiKey
 openaiApiKey: List[str]
 
 
+def random_string(length):
+    import random
+    string = ""
+    for i in range(length):
+        string += chr(random.randint(97, 122))  # 生成小写字母
+
+    return string
+
+
 async def completion():
     try:
         response = await llm_kira.openai.Completion(api_key=openaiApiKey, proxy_url="").create(
@@ -63,20 +72,24 @@ async def chat():
     promptManger = receiver.PromptManger(profile=conversation,
                                          connect_words="\n",
                                          )
-    promptManger.insert(item=PromptItem(start="Neko", text="你好"))
+    # 大型数据对抗测试
+    # promptManger.insert(item=PromptItem(start="Neko", text=random_string(4000)))
+    # promptManger.insert(item=PromptItem(start="Neko", text=random_string(500)))
+    # 多 prompt 对抗测试
+    promptManger.insert(item=PromptItem(start="Neko", text="喵喵喵"))
     promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是 1596321"))
-    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
-                                         prompt=promptManger,
-                                         predict_tokens=500,
-                                         increase="外部增强:每句话后面都要带 “喵”",
-                                         )
+    response = await chat_client.predict(
+        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
+        prompt=promptManger,
+        predict_tokens=500,
+        increase="外部增强:每句话后面都要带 “喵”",
+    )
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
     print(f"usage:{response.llm.usage}")
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
-
     promptManger.clean()
     promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的号码是多少？"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
@@ -95,7 +108,7 @@ async def chat():
 
 
 async def Moderation():
-    response = await llm_kira.openai.Moderations(api_key=openaiApiKey).create(input="Kill You！")
+    response = await llm_kira.openai.Moderations(api_key=openaiApiKey).create(input=random_string(5000))  # "Kill You！")
     print(response)
 
 

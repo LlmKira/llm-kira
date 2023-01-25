@@ -187,6 +187,7 @@ class OpenAi(LlmBase):
             "top_p": 1,
             "n": 1
         }
+
         # Kwargs
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
@@ -205,9 +206,9 @@ class OpenAi(LlmBase):
             _frequency_penalty, _presence_penalty, _temperature = Detect().gpt_tendency_arg(prompt=prompt)
             # SOME HOT CAKE
             _request_arg.update({
-                "frequency_penalty": _frequency_penalty,
-                "presence_penalty": _presence_penalty,
-                "temperature": _temperature,
+                "frequency_penalty": float(_frequency_penalty),
+                "presence_penalty": float(_presence_penalty),
+                "temperature": float(_temperature),
             })
 
         # Req
