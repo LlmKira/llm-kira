@@ -209,7 +209,10 @@ class OpenAi(LlmBase):
                 "presence_penalty": float(_presence_penalty),
                 "temperature": float(_temperature),
             })
-
+        # logit_bias
+        if not _request_arg.get("logit_bias"):
+            _request_arg["logit_bias"] = {}
+            _request_arg.pop("logit_bias")
         # Req
         response = await Completion(api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg

@@ -94,7 +94,7 @@ async def chat():
     print(f"---{response.llm.time}---")
     promptManger.clean()
     promptManger.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
-    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
+    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", logit_bias=None),
                                          prompt=promptManger,
                                          predict_tokens=500,
                                          increase="外部增强:每句话后面都要带 “喵”",
