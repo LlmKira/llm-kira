@@ -182,10 +182,8 @@ class OpenAi(LlmBase):
         """
 
         _request_arg = {
-            "temperature": float(0.9),
-            "logit_bias": {},
-            "top_p": float(1),
-            "n": int(1)
+            "top_p": 1,
+            "n": 1
         }
         # Kwargs
         if llm_param:

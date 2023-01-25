@@ -22,7 +22,7 @@ class Completion(object):
             if not api_key:
                 raise RuntimeError("Use Out")
             random.shuffle(api_key)
-            api_key = api_key[0]
+            api_key = random.choice(api_key)
             api_key: str
         if not api_key:
             raise RuntimeError("NO KEY")
