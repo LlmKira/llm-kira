@@ -238,7 +238,7 @@ class SinglePoint(Point):
         memory = list(reversed(memory))
         for i in range(0, len(memory)):
             _forget = forgetting_curve(i)
-            if _forget > 7:
+            if _forget > 5:
                 memory[i]["content"]["weight"] = [_forget]
             else:
                 memory[i]["content"]["weight"] = []
