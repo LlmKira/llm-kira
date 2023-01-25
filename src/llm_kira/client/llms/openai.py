@@ -187,7 +187,6 @@ class OpenAi(LlmBase):
             "top_p": 1,
             "n": 1
         }
-
         # Kwargs
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
@@ -200,6 +199,7 @@ class OpenAi(LlmBase):
                                   f"{self.profile.start_name}：",
                                   f"{self.profile.restart_name}："],
                             )
+
         # Penalty
         if self.auto_penalty:
             # THINK ABOUT HOT CAKE
@@ -215,6 +215,8 @@ class OpenAi(LlmBase):
         response = await Completion(api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg
         )
+
+        # Reply
         reply = self.parse_response(response)
         usage = self.parse_usage(response)
         return LlmReturn(model_flag=llm_param.model_name,

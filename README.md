@@ -10,7 +10,7 @@ Building ChatBot with LLMs.Using `async` requests.
 
 * safely cut context
 * usage
-* async request api
+* async request api / curl
 * multi-Api Key load
 * self-design callback
 

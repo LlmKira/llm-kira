@@ -823,6 +823,17 @@ files = [
 ]
 
 [[package]]
+name = "pycurl"
+version = "7.45.2"
+description = "PycURL -- A Python Interface To The cURL library"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "pycurl-7.45.2.tar.gz", hash = "sha256:5730590be0271364a5bddd9e245c9cc0fb710c4cbacbdd95264a3122d23224ca"},
+]
+
+[[package]]
 name = "pydantic"
 version = "1.10.4"
 description = "Data validation and settings management using python type hints"
@@ -1302,4 +1313,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "78ead6b6d4032ee306c2b32c9b40480320c422b775fcc1b8c33d365dd854cdb2"
+content-hash = "96fcdae853e82f44b1ff2a38d4d847fde27546e876908a046fc3046cec1eeb38"

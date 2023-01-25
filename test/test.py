@@ -160,11 +160,11 @@ async def Web():
     print(h0)
     print(h1)
 
-
 # asyncio.run(completion())
-asyncio.run(chat())
+# asyncio.run(chat())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())
 # asyncio.run(GPT2())
 # asyncio.run(Web())
+# print(float(1))

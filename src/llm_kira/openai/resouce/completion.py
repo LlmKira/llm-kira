@@ -21,7 +21,8 @@ class Completion(object):
             api_key: list
             if not api_key:
                 raise RuntimeError("Use Out")
-            api_key = random.choice(api_key)
+            random.shuffle(api_key)
+            api_key = api_key[0]
             api_key: str
         if not api_key:
             raise RuntimeError("NO KEY")
@@ -76,8 +77,8 @@ class Completion(object):
                        }
         # 返回请求
         return await request(
-            "POST",
-            api["url"],
+            method="POST",
+            url=api["url"],
             data=_api_config,
             auth=self.__api_key,
             proxy=self.__proxy,
