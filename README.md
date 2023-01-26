@@ -68,7 +68,7 @@ llm = llm_kira.client.llms.OpenAi(
     call_func=None,
 )
 
-mem = receiver.MemoryManger(profile=conversation)
+mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                memory_manger=mem,
                                optimizer=Optimizer.SinglePoint,
@@ -76,13 +76,13 @@ chat_client = receiver.ChatBot(profile=conversation,
 
 
 async def chat():
-    promptManger = receiver.PromptManger(profile=conversation,
+    promptManager = receiver.PromptManager(profile=conversation,
                                          connect_words="\n",
                                          template="Templates, custom prefixes"
                                          )
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="My id is 1596321"))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text="My id is 1596321"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
-                                         prompt=promptManger,
+                                         prompt=promptManager,
                                          predict_tokens=500,
                                          increase="External enhancements, or searched result",
                                          )
@@ -93,10 +93,10 @@ async def chat():
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
 
-    promptManger.clean()
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="Whats my id？"))
+    promptManager.clean()
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text="Whats my id？"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
-                                         prompt=promptManger,
+                                         prompt=promptManager,
                                          predict_tokens=500,
                                          increase="外部增强:每句话后面都要带 “喵”",
                                          # parse_reply=None

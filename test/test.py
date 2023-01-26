@@ -61,7 +61,7 @@ llm = llm_kira.client.llms.OpenAi(
     call_func=None,
 )
 
-mem = receiver.MemoryManger(profile=conversation)
+mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                memory_manger=mem,
                                optimizer=Optimizer.SinglePoint,
@@ -69,20 +69,20 @@ chat_client = receiver.ChatBot(profile=conversation,
 
 
 async def chat():
-    promptManger = receiver.PromptManger(profile=conversation,
+    promptManager = receiver.PromptManager(profile=conversation,
                                          connect_words="\n",
                                          )
     # 大型数据对抗测试
-    # promptManger.insert(item=PromptItem(start="Neko", text=random_string(4000)))
-    # promptManger.insert(item=PromptItem(start="Neko", text=random_string(500)))
+    # promptManager.insert(item=PromptItem(start="Neko", text=random_string(4000)))
+    # promptManager.insert(item=PromptItem(start="Neko", text=random_string(500)))
 
     # 多 prompt 对抗测试
-    # promptManger.insert(item=PromptItem(start="Neko", text="喵喵喵"))
+    # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="我的账号是 2216444"))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text="我的账号是 2216444"))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
-        prompt=promptManger,
+        prompt=promptManager,
         predict_tokens=500,
         increase="外部增强:每句话后面都要带 “喵”",
     )
@@ -92,10 +92,10 @@ async def chat():
     print(f"usage:{response.llm.usage}")
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
-    promptManger.clean()
-    promptManger.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
+    promptManager.clean()
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", logit_bias=None),
-                                         prompt=promptManger,
+                                         prompt=promptManager,
                                          predict_tokens=500,
                                          increase="外部增强:每句话后面都要带 “喵”",
                                          # parse_reply=None

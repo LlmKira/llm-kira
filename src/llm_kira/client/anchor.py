@@ -114,7 +114,7 @@ class Preset(object):
         return f"{head} "
 
 
-class PromptManger(object):
+class PromptManager(object):
     def __init__(self,
                  profile: Conversation,
                  prompt_type: str = "chat",
@@ -174,7 +174,7 @@ class PromptManger(object):
         return self.__connect_words.join(_result)
 
 
-class MemoryManger(object):
+class MemoryManager(object):
     def __init__(self,
                  profile: Conversation,
                  ):
@@ -215,7 +215,7 @@ class MemoryManger(object):
 class ChatBot(object):
     def __init__(self,
                  profile: Conversation,
-                 memory_manger: MemoryManger,
+                 memory_manger: MemoryManager,
                  optimizer: Optimizer = Optimizer.SinglePoint,
                  llm_model: LlmBase = None
                  ):
@@ -233,7 +233,7 @@ class ChatBot(object):
             raise Exception("Whats your llm model?")
 
     async def predict(self,
-                      prompt: PromptManger,
+                      prompt: PromptManager,
                       increase: Union[str, Support] = "",
                       predict_tokens: int = 100,
                       parse_reply: Callable[[list], str] = None,

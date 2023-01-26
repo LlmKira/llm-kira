@@ -7,4 +7,4 @@
 from .llms import openai
 from .enhance import Support
 from .agent import Conversation
-from .anchor import ChatBot, MemoryManger, PromptManger, Preset
+from .anchor import ChatBot, MemoryManager, PromptManager, Preset

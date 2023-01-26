@@ -153,7 +153,7 @@ class RedisConfig(BaseModel):
     password: str = None
 
 
-def GetDataManger(redis_config: RedisConfig, filedb_path: str) -> Union[RedisWorker, ElaraWorker]:
+def GetDataManager(redis_config: RedisConfig, filedb_path: str) -> Union[RedisWorker, ElaraWorker]:
     MsgFlowData = None
     if filedb:
         MsgFlowData = ElaraWorker(filepath=filedb_path)
@@ -185,7 +185,7 @@ class MsgFlow(object):
         """
         self.uid = str(uid)
         # 工具数据类型
-        self.MsgFlowData = GetDataManger(_redis_config, _db_file)
+        self.MsgFlowData = GetDataManager(_redis_config, _db_file)
         self.memory: int = 500
 
     @staticmethod

@@ -6,3 +6,9 @@
 
 from .completion import Completion
 from .moderations import Moderations
+
+API_ERROR_TYPE = ["invalid_request_error",
+                  "billing_not_active",
+                  "billing_not_active",
+                  "insufficient_quota"
+                  ]
