@@ -335,7 +335,7 @@ class ChatBot(object):
         if not prompt_iscode:
             _prompt = _prompt.replace("\n\n", "\n")
 
-        # TOD
+        # ODO
         # logger.warning(_prompt)
 
         # Get

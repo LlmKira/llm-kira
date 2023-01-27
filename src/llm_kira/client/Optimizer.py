@@ -254,11 +254,9 @@ class SinglePoint(Point):
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _diff1 = Utils.cosion_sismilarity(pre=prompt, aft=ask)
-            _diff2 = Utils.cosion_sismilarity(pre=prompt, aft=reply)
-            _diff = _diff1 if _diff1 > _diff2 else _diff2
-            score = _diff * 100
-            score = score if score < 90 else 0
+            _ask_diff = Utils.cosion_sismilarity(pre=prompt, aft=ask)
+            _ask_diff = _ask_diff * 100
+            score = _ask_diff if _ask_diff < 90 else 0
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
             if ask == reply:
@@ -290,6 +288,7 @@ class SinglePoint(Point):
             score = sum(memory[i]["content"]["weight"])
             level = (score / full_score) * 100
             ask, reply = MsgFlow.get_content(memory[i], sign=True)
+            # print(ask, reply, level)
             if level > 50:
                 _now_token += self.tokenizer(f"{ask}{reply}")
                 if _now_token > _create_token:
