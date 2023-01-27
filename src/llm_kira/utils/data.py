@@ -6,7 +6,7 @@
 import ast
 import time
 import json
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Tuple
 from ..client.types import Memory_Flow, MemoryItem
 from ..utils import setting
 from pydantic import BaseModel
@@ -199,7 +199,7 @@ class MsgFlow(object):
         return self.MsgFlowData.setKey(uid, message_streams)
 
     @staticmethod
-    def get_content(memory_flow: Memory_Flow, sign: bool = False) -> tuple:
+    def get_content(memory_flow: Memory_Flow, sign: bool = False) -> Tuple[str, str]:
         """
         得到单条消息的内容
         :param sign: 是否署名
@@ -214,7 +214,7 @@ class MsgFlow(object):
         if isinstance(memory_flow, dict):
             _ask_ = memory_flow["content"]["ask"]
             _reply_ = memory_flow["content"]["reply"]
-        if not sign and ":" in _ask_ and '：' in _reply_:
+        if not sign and ":" in _ask_ and ':' in _reply_:
             _ask_ = _ask_.split(":", 1)[1]
             _reply_ = _reply_.split(":", 1)[1]
         if _ask_ == _reply_:
@@ -227,7 +227,8 @@ class MsgFlow(object):
         content = Memory_Flow(content=msg, time=time_s).dict()
         _message_streams = self._get_uid(self.uid)
         if "msg" in _message_streams:
-            _message_streams["msg"] = sorted(_message_streams["msg"], key=lambda x: x['time'], reverse=False)
+            # 倒序
+            _message_streams["msg"] = sorted(_message_streams["msg"], key=lambda x: x['time'], reverse=True)
             # 记忆容量重整
             if len(_message_streams["msg"]) > self.memory:
                 for i in range(len(_message_streams["msg"]) - self.memory + 1):
