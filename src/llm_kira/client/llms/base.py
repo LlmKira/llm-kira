@@ -50,8 +50,13 @@ class LlmBase(ABC):
         return len(text)
 
     @abstractmethod
-    def resize_context(self, text: str, token: int) -> str:
+    def resize_sentence(self, text: str, token: int) -> str:
         return text[:token]
+
+    @abstractmethod
+    def resize_context(self, head: list, body: list, foot: list, token: int) -> str:
+        _all = ''.join(head + body + foot)
+        return self.resize_sentence(_all, token=token)
 
     @staticmethod
     def model_context_size(model_name: str) -> int:

@@ -19,9 +19,9 @@ class LlmReturn(BaseModel):
     model_flag: Optional[str]
     prompt: str
     reply: List[str]
-    usage: int = 0
+    usage: Optional[int]
     time: int = int(time.time())
-    raw: dict
+    raw: Optional[dict]
 
 
 class ChatBotReturn(BaseModel):
@@ -48,3 +48,7 @@ class MemoryItem(BaseModel):
 class Memory_Flow(BaseModel):
     content: MemoryItem
     time: int = int(time.time() * 1000)
+
+
+class LLMException(BaseException):
+    pass

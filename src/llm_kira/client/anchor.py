@@ -13,7 +13,7 @@ from . import Optimizer
 from .enhance import Support
 from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
-from .types import LlmReturn
+from .types import LlmReturn, LLMException
 from ..utils.chat import Detect
 from ..utils.data import MsgFlow
 # 基于 Completion 上层
@@ -230,7 +230,7 @@ class ChatBot(object):
             self.optimizer = Optimizer.SinglePoint
         self.llm = llm_model
         if llm_model is None:
-            raise Exception("Whats your llm model?")
+            raise LLMException("Whats your llm model?")
 
     async def predict(self,
                       prompt: PromptManager,
@@ -242,114 +242,111 @@ class ChatBot(object):
         self.prompt = prompt
         if parse_reply:
             self.llm.parse_reply = parse_reply
-        if predict_tokens > self.llm.get_token_limit():
-            raise Exception("Why your predict token > set token limit?")
-        prompt: str = self.prompt.run(raw_list=False)
 
-        # prompt 重整
+        predict_tokens += self.llm.tokenizer(self.profile.restart_name)
+        if predict_tokens > self.llm.get_token_limit():
+            raise LLMException("Why your predict token > set token limit?")
+
+        prompt_text: str = self.prompt.run(raw_list=False)
+        # prompt 前向注入
         prompt_raw: list = self.prompt.run(raw_list=True)
-        prompt_raw_index = list(reversed(prompt_raw))[0]
         __extra_memory = []
-        __content_list = [prompt_raw_index]
         for item in prompt_raw:
             index = round(len(item) / 3) if round(len(item) / 3) > 3 else 10
             if ":" in item[:index]:
                 __extra_memory.append(item)
             else:
-                __content_list.append(item)
+                self.memory_manger.save_context(ask=item,
+                                                reply=item,
+                                                no_head=True)
             if len(__extra_memory) == 2:
                 self.memory_manger.save_context(ask=__extra_memory[0],
                                                 reply=__extra_memory[1],
                                                 no_head=True)
                 __extra_memory.clear()
-
-        prompt_index = ','.join(__content_list)
-
+        # Prompt Info
+        prompt_lang: str = Detect.get_text_language(sentence=prompt_text)
+        prompt_iscode: bool = Detect.isCode(sentence=prompt_text)
+        prompt_preset = Preset(self.profile)
         # Template
         template: str = self.prompt.run_template()
-
-        # Lang
-        prompt_lang: str = Detect.get_text_language(sentence=prompt)
-        prompt_iscode: bool = Detect.isCode(sentence=prompt)
-        prompt_preset = Preset(self.profile)
-        _template = []
-
-        # Role
+        # Preset LLM Head
         if template is None:
+            __template = []
+            # Head
+            head = prompt_preset.head(prompt_iscode=prompt_iscode,
+                                      lang=prompt_lang)
+            __template.append(head)
             # Character
             character = prompt_preset.character(lang=prompt_lang)
             _role = prompt_preset.role(restart_name=self.profile.restart_name,
                                        character=",".join(character),
                                        prompt_iscode=prompt_iscode,
                                        lang=prompt_lang)
-            role = f"{self.profile.start_name}:{_role}.\n"
-            _template.append(role)
-
-        # Head
-        if template is None:
-            head = prompt_preset.head(prompt_iscode=prompt_iscode,
-                                      lang=prompt_lang)
-            _template.append(head)
-        if template is None:
-            template = ''.join(_template)
-        # Restart
-        _prompt_s = [f"{prompt}"]
-
-        # Memory
+            role = f"\n{_role}."
+            __template.append(role)
+            template = ''.join(__template)
+        # Memory Read
         _prompt_memory = self.memory_manger.read_memory(plain_text=False)
 
+        # Advance Template
+        _prompt_head = []
+        _prompt_body = []
+        _prompt_foot = []
+        _prompt_foot.extend([f"{prompt_text}"])
         # Enhance
         if isinstance(increase, str):
             _appendix = increase
         else:
             _appendix = await increase.run()
-
-        # PROMPT
-        _prompt_list = [_appendix]
-
-        # Extra
-        _extra_token = int(
+        _prompt_head.append(template)
+        _prompt_head.append(_appendix)
+        # Cut Size
+        _body_token = int(
             predict_tokens +
-            len(_prompt_memory) +
-            self.llm.tokenizer(self.profile.start_name) +
-            self.llm.tokenizer(template + "".join(_prompt_s)) +
-            self.llm.tokenizer(_appendix)
+            # len(_prompt_memory) +
+            self.llm.tokenizer(''.join(_prompt_head)) +
+            self.llm.tokenizer(''.join(_prompt_foot)) +
+            1  # \n
         )
 
         # Run Optimizer
-        _prompt_apple = self.optimizer(
-            prompt=prompt,
+        _prompt_optimized = self.optimizer(
+            prompt=prompt_text,
             memory=_prompt_memory,
-            extra_token=_extra_token,
+            extra_token=_body_token,
             token_limit=self.llm.get_token_limit(),
             tokenizer=self.llm.tokenizer,
         ).run()
+        _prompt_body.extend(_prompt_optimized)
 
-        # After
-        _prompt_list.extend(_prompt_apple)
-        _prompt_list.extend(_prompt_s)
+        # Resize
+        _llm_result_limit = self.llm.get_token_limit() - predict_tokens
+        _prompt = self.llm.resize_context(head=_prompt_head,
+                                          body=_prompt_body,
+                                          foot=_prompt_foot,
+                                          token=_llm_result_limit)
+
         # Clean
-        _prompt_list = [item for item in _prompt_list if item]
-        # Stick
-        _prompt = '\n'.join(_prompt_list) + f"\n{self.profile.restart_name}:"
+        _prompt_body = [item for item in _prompt_body if item]
+
+        # Stick Them
+        _prompt = _prompt + f"\n{self.profile.restart_name}:"
         if not prompt_iscode:
             _prompt = _prompt.replace("\n\n", "\n")
 
-        # Resize
-        _limit = self.llm.get_token_limit() - _extra_token
-        _prompt = self.llm.resize_context(_prompt, _limit)
-        _prompt = template + _prompt
-        _prompt = self.llm.resize_context(_prompt, self.llm.get_token_limit() - predict_tokens)
+        # ODO
         # logger.warning(_prompt)
-        # GET
+
+        # Get
         llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, llm_param=llm_param)
         llm_result: LlmReturn
 
-        # 解析结果返回结果
-        self.memory_manger.save_context(ask=prompt_index,
+        # Parse Result
+        self.memory_manger.save_context(ask=prompt_text,
                                         reply=f"{self.profile.restart_name}:{self.llm.parse_reply(llm_result.reply)}",
                                         no_head=True)
         return ChatBotReturn(conversation_id=f"{self.profile.conversation_id}",
                              llm=llm_result,
-                             ask=prompt_index,
+                             ask=prompt_text,
                              reply=self.llm.parse_reply(llm_result.reply))
