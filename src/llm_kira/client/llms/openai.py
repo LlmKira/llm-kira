@@ -145,11 +145,29 @@ class OpenAi(LlmBase):
         """处理解码后的列表"""
         return "".join(reply)
 
-    def resize_context(self, text: str, token: int) -> str:
+    def resize_sentence(self, text: str, token: int) -> str:
         token = token if token > 5 else 5
         while self.tokenizer(text) > token:
             text = text[4:]
         return text
+
+    def resize_context(self, head: list, body: list, foot: list, token: int) -> str:
+        token = token if token > 5 else 5
+        _head = '\n'.join(head) + "\n"
+        _body = "\n".join(body) + "\n"
+        _foot = ''.join(foot)
+        # Force Resize Head
+        _head = _head[:int(token * 0.8)]
+        _all = _head + _body + _foot
+        while self.tokenizer(_all) > token:
+            if len(body) > 2:
+                body.pop(0)
+                _body = "\n".join(body)
+            else:
+                _body = _body[4:]
+            _all = _head + _body + _foot
+        self.resize_sentence(_all, token=token)
+        return _all
 
     @staticmethod
     def model_context_size(model_name: str) -> int:
