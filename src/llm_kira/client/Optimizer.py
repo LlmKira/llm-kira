@@ -91,9 +91,16 @@ class MatrixPoint(Point):
         if self.memory is None:
             return []
         _create_token = self.token_limit - self.extra_token
+
         # 入口检查
         if len(memory) - attention < 0:
             return convert_msgflow_to_list(memory)
+
+        # 转换为
+        for item in range(len(memory)):
+            if isinstance(memory[item], Memory_Flow):
+                memory[item] = memory[item].dict()
+        memory: list
 
         def forgetting_curve(x):
             _weight = numpy.exp(-x / 5) * 100 + 10
@@ -101,30 +108,33 @@ class MatrixPoint(Point):
             _weight = _weight if _weight > 0 else 0
             # 高度线
             _weight = _weight if _weight < 100 else 100
+            # 推底值，防止无法唤起
+            _weight = _weight if _weight > 15 else 5
             return _weight
-
-        # 转换为
-        for item in range(len(memory)):
-            memory[item] = memory[item].dict()
-        memory: list
 
         # 计算初始保留比并初始化
         memory = list(reversed(memory))
         for i in range(0, len(memory)):
             _forget = forgetting_curve(i)
-            if _forget > 10:
+            if _forget > 5:
                 memory[i]["content"]["weight"] = [_forget]
             else:
                 memory[i]["content"]["weight"] = []
         memory = list(reversed(memory))
 
+        # 筛选标准发言
+        _index = []
+        for i in range(0, len(memory) - attention):
+            ask, reply = MsgFlow.get_content(memory[i], sign=False)
+            if len(ask) < 1 or len(reply) < 1:
+                memory[i]["content"]["weight"].append(-1000)
+
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _diff1 = Utils.cosion_sismilarity(pre=prompt, aft=f"{ask}{reply}")
-            _diff = _diff1
-            score = _diff * 100
-            score = score if score < 95 else 1
+            _ask_diff = Utils.cosion_sismilarity(pre=prompt, aft=ask)
+            _ask_diff = _ask_diff * 100
+            score = _ask_diff if _ask_diff < 90 else 0
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
 
@@ -139,18 +149,9 @@ class MatrixPoint(Point):
                     if ir in f"{ask}{reply}":
                         score += 1
                 _get = (score / full_score) * 100
+                _get = _get if _get < 95 else 50
                 if _get != 0:
                     memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
-
-        # 预处理
-        for i in range(0, len(memory) - attention):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            if self.tokenizer(f"{ask}{reply}") > 240:
-                if Detect.get_text_language(sentence=f"{ask}{reply}") == "CN":
-                    _sum = Utils.tfidf_summarization(sentence=f"{ask}{reply}", ratio=0.5)
-                    if len(_sum) > 7:
-                        memory[i]["content"]["ask"] = "info"
-                        memory[i]["content"]["reply"] = _sum
 
         # 进行筛选，计算限制
         _msg_flow = []
@@ -163,7 +164,8 @@ class MatrixPoint(Point):
             score = sum(memory[i]["content"]["weight"])
             level = (score / full_score) * 100
             ask, reply = MsgFlow.get_content(memory[i], sign=True)
-            if level > 30:
+            # print(ask, reply, level)
+            if level > 50:
                 _now_token += self.tokenizer(f"{ask}{reply}")
                 if _now_token > _create_token:
                     break
@@ -259,8 +261,6 @@ class SinglePoint(Point):
             score = _ask_diff if _ask_diff < 90 else 0
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
-            if ask == reply:
-                memory[i]["content"]["ask"] = ""
 
         # 主题检索
         _key = Utils.tfidf_keywords(prompt, topK=5)
