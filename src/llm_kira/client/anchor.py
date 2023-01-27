@@ -341,6 +341,7 @@ class ChatBot(object):
         # Get
         llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, llm_param=llm_param)
         llm_result: LlmReturn
+
         # Parse Result
         self.memory_manger.save_context(ask=prompt_text,
                                         reply=f"{self.profile.restart_name}:{self.llm.parse_reply(llm_result.reply)}",
