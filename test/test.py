@@ -50,7 +50,7 @@ receiver = llm_kira.client
 conversation = receiver.Conversation(
     start_name="Human:",
     restart_name="AI:",
-    conversation_id=10093,  # random.randint(1, 10000000),
+    conversation_id=10096,  # random.randint(1, 10000000),
 )
 
 llm = llm_kira.client.llms.OpenAi(
@@ -70,8 +70,8 @@ chat_client = receiver.ChatBot(profile=conversation,
 
 async def chat():
     promptManager = receiver.PromptManager(profile=conversation,
-                                         connect_words="\n",
-                                         )
+                                           connect_words="\n",
+                                           )
     # 大型数据对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text=random_string(4000)))
     # promptManager.insert(item=PromptItem(start="Neko", text=random_string(500)))
@@ -79,13 +79,14 @@ async def chat():
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text="我的账号是 2216444"))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text="换谁都被吓走吧"))
     response = await chat_client.predict(
-        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
+        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
         predict_tokens=500,
         increase="外部增强:每句话后面都要带 “喵”",
     )
+
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
@@ -93,13 +94,15 @@ async def chat():
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
     promptManager.clean()
+    return "END"
     promptManager.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
-    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", logit_bias=None),
-                                         prompt=promptManager,
-                                         predict_tokens=500,
-                                         increase="外部增强:每句话后面都要带 “喵”",
-                                         # parse_reply=None
-                                         )
+    response = await chat_client.predict(
+        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
+        prompt=promptManager,
+        predict_tokens=500,
+        increase="外部增强:每句话后面都要带 “喵”",
+        # parse_reply=None
+        )
     _info = "parse_reply 回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。",
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
@@ -121,9 +124,10 @@ async def Sentiment():
         "什么是？",
         "玉玉了，紫砂了",
         "我知道了",
-        "主播抑郁了，自杀了",
+        "抑郁了，自杀了",
         "公主也能看啊",
-        "换谁都被吓走吧"
+        "换谁都被吓走吧",
+        "错了"
     ]
     for item in _sentence_list:
         print(item)

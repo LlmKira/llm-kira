@@ -250,6 +250,7 @@ class ChatBot(object):
         prompt_text: str = self.prompt.run(raw_list=False)
         # prompt 前向注入
         prompt_raw: list = self.prompt.run(raw_list=True)
+        prompt_raw.pop(-1)
         __extra_memory = []
         for item in prompt_raw:
             index = round(len(item) / 3) if round(len(item) / 3) > 3 else 10

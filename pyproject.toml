@@ -23,9 +23,8 @@ pydantic = "^1.10.4"
 loguru = "^0.6.0"
 elara = "^0.5.4"
 openai-async = "^0.0.2"
-numpy = "^1.24.1"
+numpy = "^1.22.1"
 tiktoken = "^0.1.2"
-scikit-learn = "^1.2.0"
 # pycurl = "^7.43.0.6"
 
 

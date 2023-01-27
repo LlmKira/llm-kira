@@ -253,6 +253,17 @@ class SinglePoint(Point):
             if len(ask) < 1 or len(reply) < 1:
                 memory[i]["content"]["weight"].append(-1000)
 
+        _sentiment_ = prompt.split(":", 1)
+        _sentiment_ = _sentiment_[0] if len(_sentiment_) == 1 else _sentiment_[1]
+        _prompt_sentiment = Utils.sentiment(sentence=_sentiment_).get("score")
+        # 情绪识别
+        for i in range(len(memory) - attention, len(memory)):
+            ask, reply = MsgFlow.get_content(memory[i], sign=True)
+            if _prompt_sentiment < -0.3:
+                memory[i]["content"]["ask"] = ask + "<good>"
+            if _prompt_sentiment > 0.3:
+                memory[i]["content"]["ask"] = ask + "<bad>"
+
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
