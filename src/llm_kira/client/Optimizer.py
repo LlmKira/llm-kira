@@ -160,7 +160,7 @@ class MatrixPoint(Point):
         memory = sorted(memory, key=lambda x: x['time'], reverse=True)
         for i in range(0, len(memory)):
             total = len(memory[i]["content"]["weight"])
-            full_score = total * 100
+            full_score = total * 100 + 1
             score = sum(memory[i]["content"]["weight"])
             level = (score / full_score) * 100
             ask, reply = MsgFlow.get_content(memory[i], sign=True)
@@ -284,7 +284,7 @@ class SinglePoint(Point):
         memory = sorted(memory, key=lambda x: x['time'], reverse=True)
         for i in range(0, len(memory)):
             total = len(memory[i]["content"]["weight"])
-            full_score = total * 100
+            full_score = total * 100 + 1
             score = sum(memory[i]["content"]["weight"])
             level = (score / full_score) * 100
             ask, reply = MsgFlow.get_content(memory[i], sign=True)
