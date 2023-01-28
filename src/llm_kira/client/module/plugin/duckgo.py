@@ -155,7 +155,7 @@ class DuckGo(object):
             return []
         _list = [self.filter_sentence(query=self._text, sentence=f"{i['title']}{i['body']}") for i in _results]
         _list = [x for x in _list if x]
-        _list = _list[:10]
+        _list = _list[:20]
         logger.trace(f"初步筛选：{_list}")
         _returner = NlP.nlp_filter_list(prompt=self._text, material=_list)
         logger.trace(f"NLP筛选：{_returner}")

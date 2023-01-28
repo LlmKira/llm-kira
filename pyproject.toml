@@ -26,6 +26,7 @@ openai-async = "^0.0.2"
 numpy = "^1.22.1"
 tiktoken = "^0.1.2"
 # pycurl = "^7.43.0.6"
+duckduckgo-search = "^2.8.0"
 
 
 [build-system]

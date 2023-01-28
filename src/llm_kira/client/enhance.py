@@ -34,7 +34,6 @@ class PluginSystem(Support):
                                                 plugins=[plugin])
             _return.extend(processed)
         reply = "\n".join(_return) if _return else ""
-        reply = reply[:555]
         logger.debug(f"AllPluginReturn:{reply}")
         return reply
 
