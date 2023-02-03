@@ -102,7 +102,7 @@ async def chat():
         predict_tokens=500,
         increase="外部增强:每句话后面都要带 “喵”",
         # parse_reply=None
-        )
+    )
     _info = "parse_reply 回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。",
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
@@ -133,6 +133,11 @@ async def Sentiment():
         print(item)
         response = llm_kira.utils.chat.Utils.sentiment(item)
         print(response)
+
+
+async def Sim():
+    response = llm_kira.utils.chat.Utils.edit_similarity(pre="4552", aft="1224")
+    print(response)
 
 
 async def KeyParse():
@@ -173,6 +178,7 @@ asyncio.run(chat())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())
 # asyncio.run(GPT2())
+# asyncio.run(Sim())
 # asyncio.run(Web())
 # print(float(1))
 # print(int(1.2))

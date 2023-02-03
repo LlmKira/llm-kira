@@ -46,7 +46,9 @@ class LlmBase(ABC):
         return 2000
 
     @abstractmethod
-    def tokenizer(self, text):
+    def tokenizer(self, text, raw=False) -> Union[int, list]:
+        if raw:
+            return []
         return len(text)
 
     @abstractmethod
@@ -80,6 +82,7 @@ class LlmBase(ABC):
     @abstractmethod
     async def run(self,
                   prompt: str,
+                  validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: LlmBaseParam = None,
                   ) -> Optional[LlmReturn]:

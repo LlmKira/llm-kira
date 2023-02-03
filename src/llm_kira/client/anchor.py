@@ -328,19 +328,16 @@ class ChatBot(object):
                                           foot=_prompt_foot,
                                           token=_llm_result_limit)
 
-        # Clean
-        _prompt_body = [item for item in _prompt_body if item]
-
         # Stick Them
         _prompt = _prompt + f"\n{self.profile.restart_name}:"
         if not prompt_iscode:
             _prompt = _prompt.replace("\n\n", "\n")
 
-        # ODO
-        # logger.warning(_prompt)
-
         # Get
-        llm_result = await self.llm.run(prompt=_prompt, predict_tokens=predict_tokens, llm_param=llm_param)
+        llm_result = await self.llm.run(prompt=_prompt,
+                                        validate=_prompt_body,
+                                        predict_tokens=predict_tokens,
+                                        llm_param=llm_param)
         llm_result: LlmReturn
 
         # Parse Result
@@ -350,4 +347,4 @@ class ChatBot(object):
         return ChatBotReturn(conversation_id=f"{self.profile.conversation_id}",
                              llm=llm_result,
                              ask=prompt_text,
-                             reply=self.llm.parse_reply(llm_result.reply))
+                             reply=self.llm.parse_reply(llm_result.reply).rstrip("<im_end>"))

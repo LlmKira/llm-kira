@@ -18,7 +18,7 @@ class Week(object):
         self._server = None
         self._text = None
         self._week_list = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
-        self._week_key = ["星期", "星期几", "时间", "周几", "周一", "周二", "周三", "周四", "周五", "周六"]
+        self._week_key = ["星期", "星期几", "week", "时间", "周几", "周一", "周二", "周三", "周四", "周五", "周六"]
 
     def requirements(self):
         return []

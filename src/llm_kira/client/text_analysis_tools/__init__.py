@@ -14,3 +14,5 @@ from .api.summarization.tfidf_summarization import TfidfSummarization
 from .api.summarization.textrank_summarization import TextRankSummarization
 from .api.text_similarity.simhash import SimHashSimilarity
 from .api.sentiment.sentiment import SentimentAnalysis
+from .api.text_similarity.edit import EditSimilarity
+from .api.text_similarity.cosion import CosionSimilarity

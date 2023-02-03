@@ -111,10 +111,12 @@ class OpenAi(LlmBase):
     def get_token_limit(self) -> int:
         return self.token_limit
 
-    def tokenizer(self, text) -> int:
+    def tokenizer(self, text, raw: bool = False) -> Union[int, list]:
         gpt_tokenizer = tiktoken.get_encoding("gpt2")
-        _token = len(gpt_tokenizer.encode(text))
-        return _token
+        _token = gpt_tokenizer.encode(text)
+        if raw:
+            return _token
+        return len(_token)
 
     @staticmethod
     def parse_response(response) -> list:
@@ -152,6 +154,7 @@ class OpenAi(LlmBase):
         return text
 
     def resize_context(self, head: list, body: list, foot: list, token: int) -> str:
+        body = [item for item in body if item]
         token = token if token > 5 else 5
         _head = '\n'.join(head) + "\n"
         _body = "\n".join(body) + "\n"
@@ -188,25 +191,29 @@ class OpenAi(LlmBase):
 
     async def run(self,
                   prompt: str,
+                  validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: OpenAiParam = None
                   ) -> LlmReturn:
         """
         异步的，得到对话上下文
         :param predict_tokens: 限制返回字符数量
+        :param validate: 惩罚验证列表
         :param prompt: 提示词
         :param llm_param: 参数表
         :return:
         """
-
         _request_arg = {
             "top_p": 1,
             "n": 1
         }
+        _request_arg: dict
+
         # Kwargs
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
-
+        if validate is None:
+            validate = []
         _request_arg.update(model=str(llm_param.model_name),
                             prompt=str(prompt),
                             max_tokens=int(predict_tokens),
@@ -217,26 +224,46 @@ class OpenAi(LlmBase):
                                   f"{self.profile.restart_name}："],
                             )
 
-        # Penalty
-        if self.auto_penalty:
-            # THINK ABOUT HOT CAKE
-            _frequency_penalty, _presence_penalty, _temperature = Detect().gpt_tendency_arg(prompt=prompt)
-            # SOME HOT CAKE
+        # Adjust Penalty
+        if self.auto_penalty and validate:
+            # Cook
+            _frequency_penalty, _presence_penalty, _temperature = Detect().gpt_tendency_arg(prompt=prompt,
+                                                                                            memory=validate,
+                                                                                            tokenizer=self.tokenizer
+                                                                                            )
+            # Some Update
             _request_arg.update({
                 "frequency_penalty": float(_frequency_penalty),
                 "presence_penalty": float(_presence_penalty),
                 "temperature": float(_temperature),
             })
-        # logit_bias
+
+        # 校准字节参数
         if not _request_arg.get("logit_bias"):
             _request_arg["logit_bias"] = {}
             _request_arg.pop("logit_bias")
-        # Req
+
+        # 校准温度和惩罚参数
+        if _request_arg.get("frequency_penalty"):
+            _frequency_penalty = _request_arg["frequency_penalty"]
+            _frequency_penalty = _frequency_penalty if -2.0 < _frequency_penalty else -1.9
+            _frequency_penalty = _frequency_penalty if _frequency_penalty < 2.0 else 1.9
+            _request_arg["frequency_penalty"] = _frequency_penalty
+
+        if _request_arg.get("presence_penalty"):
+            _presence_penalty = _request_arg["presence_penalty"]
+            _presence_penalty = _presence_penalty if -2.0 < _presence_penalty else -1.9
+            _presence_penalty = _presence_penalty if _presence_penalty < 2.0 else 1.9
+            _request_arg["presence_penalty"] = _presence_penalty
+
+        if _request_arg.get("temperature"):
+            _temperature = _request_arg["temperature"]
+            _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
+
+        # 请求
         response = await Completion(api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg
         )
-
-        # Reply
         reply = self.parse_response(response)
         usage = self.parse_usage(response)
         return LlmReturn(model_flag=llm_param.model_name,

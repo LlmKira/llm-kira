@@ -5,6 +5,7 @@
 # @Github    ：sudoskys
 import re
 import random
+from typing import Union, Callable
 
 from .langdetect.langdetect import LangDetector
 from ..client.text_analysis_tools.api.keywords.tfidf import TfidfKeywords
@@ -13,10 +14,18 @@ from ..client.text_analysis_tools.api.summarization.textrank_summarization impor
 from ..client.text_analysis_tools.api.summarization.tfidf_summarization import TfidfSummarization
 from ..client.text_analysis_tools.api.text_similarity.simhash import SimHashSimilarity
 from ..client.text_analysis_tools.api.text_similarity.cosion import CosionSimilarity
+from ..client.text_analysis_tools.api.text_similarity.edit import EditSimilarity
 from ..client.text_analysis_tools.api.keyphrase.keyphrase import KeyPhraseExtraction
 import tiktoken
 
 gpt_tokenizer = tiktoken.get_encoding("gpt2")
+
+
+def default_gpt_tokenizer(text, raw: bool = False) -> Union[int, list]:
+    _token = gpt_tokenizer.encode(text)
+    if raw:
+        return _token
+    return len(_token)
 
 
 class Detect(object):
@@ -87,59 +96,52 @@ class Detect(object):
             lang_type = detect(text=sentence.replace("\n", "").replace("\r", ""))[0][0].upper()
         return lang_type
 
-    def gpt_tendency_arg(self, prompt: str, memory: list = None, lang: str = "CN") -> tuple:
+    def gpt_tendency_arg(self, prompt: str,
+                         memory: list = None,
+                         tokenizer: Callable[[str, bool], Union[int, list]] = default_gpt_tokenizer,
+                         lang: str = "CN") -> tuple:
+
         if memory is None:
             memory = []
-        # 代码
+        temperature = 0.9
+        frequency_penalty = 0
+        presence_penalty = 0
+
         if self.isCode(sentence=prompt):
-            temperature = 0.9
-            frequency_penalty = 0
-            presence_penalty = 0
-            return frequency_penalty, presence_penalty, temperature
-        if self.isNeedHelp(sentence=prompt):
-            temperature = 0.9
-            frequency_penalty = 0
-            presence_penalty = 0
             return frequency_penalty, presence_penalty, temperature
 
-        # 普通情况
-        temperature = 0.9
+        if self.isNeedHelp(sentence=prompt):
+            temperature -= 0.2
+            frequency_penalty -= 0.1
+            presence_penalty -= 0.1
 
         # 控制随机数的精度round(数值，精度)
-        presence_penalty = 0 + round(random.uniform(-1, 1) / 10, 2)
-        frequency_penalty = 0 + round(random.uniform(-1, 1) / 10, 2)
+        # presence_penalty += round(random.uniform(-1, 1) / 10, 2)
+        # frequency_penalty += round(random.uniform(-1, 1) / 10, 2)
         _sentiment_score = Utils.sentiment(sentence=prompt).get("score")
         while _sentiment_score > 1.5 or _sentiment_score < -1.5:
             _sentiment_score = _sentiment_score / 10
         _sentiment_score = 0.1 if 0.05 < _sentiment_score < 0.1 else _sentiment_score
         _sentiment_score = -0.1 if -0.1 < _sentiment_score < -0.05 else _sentiment_score
+        # 不谈论新话题
+        presence_penalty -= _sentiment_score * 0.4
+        # 拒绝重复
+        frequency_penalty += _sentiment_score * 0.4
 
-        # NEW 高兴正数，就不扭转
-        presence_penalty -= _sentiment_score * 1.2
+        # 验证记忆体
+        if len(memory) > 3:
+            # 计算回复指数指标
+            _token = tokenizer("".join(memory[-4:]), True)
+            _repeat_score = 2 * (0.8 - len(set(_token)) / len(_token))
+            frequency_penalty = frequency_penalty + _repeat_score
+            print(_repeat_score)
 
-        # REPEAT 高兴正数，则采用默认加法惩罚
-        frequency_penalty += _sentiment_score * 0.8
-        _memory_len = len(memory)
-        # 对话结束就拒绝复读，扭转为正数！
-        if _memory_len > 20:
-            while _memory_len > 20:
-                _memory_len = _memory_len - 20
-            if _memory_len / 20 > 0.7:
-                frequency_penalty = abs(frequency_penalty)
-
-        # FIX
+        # Fix
         temperature = round(temperature, 1)
         presence_penalty = round(presence_penalty, 1)
         frequency_penalty = round(frequency_penalty, 1)
 
-        # CHECK
-        temperature = temperature if 0 < temperature < 1 else 0.9
-
-        presence_penalty = presence_penalty if -1.8 < presence_penalty else -0.1
-        presence_penalty = presence_penalty if presence_penalty < 1.8 else 0.1
-
-        frequency_penalty = frequency_penalty if -1.8 < frequency_penalty else -0.1
-        frequency_penalty = frequency_penalty if frequency_penalty < 1.8 else 0.1
+        # Check
         return frequency_penalty, presence_penalty, temperature
 
 
@@ -178,13 +180,23 @@ class Utils(object):
         return _sum
 
     @staticmethod
-    def cosion_sismilarity(pre, aft):
+    def cosion_similarity(pre, aft):
         """
         基于余弦计算文本相似性 0 - 1 (1为最相似)
         :return: 余弦值
         """
         _cos = CosionSimilarity()
         _sim = _cos.similarity(pre, aft)
+        return _sim
+
+    @staticmethod
+    def edit_similarity(pre, aft):
+        """
+        基于余弦计算文本相似性 0 - 1 (1为最相似)
+        :return: 余弦值
+        """
+        _cos = EditSimilarity()
+        _sim = _cos.edit_dist(pre, aft)
         return _sim
 
     @staticmethod

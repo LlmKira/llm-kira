@@ -115,7 +115,7 @@ class NlP(object):
                     continue
                 _pre = material[i]
                 _afe = material[i + 1]
-                sim = Utils.cosion_sismilarity(pre=_pre, aft=_afe)
+                sim = Utils.cosion_similarity(pre=_pre, aft=_afe)
                 if sim > 0.7:
                     _remo = _afe if len(_afe) > len(_pre) else _pre
                     # 移除过于相似的
@@ -129,7 +129,7 @@ class NlP(object):
         material = list(material_.keys())
         _top_table = {}
         for item in material:
-            _top_table[item] = Utils.cosion_sismilarity(pre=prompt, aft=item)
+            _top_table[item] = Utils.cosion_similarity(pre=prompt, aft=item)
         material = {k: v for k, v in _top_table.items() if v > 0.15}
         # 搜索引擎比相似度算法靠谱所以注释掉了
         # material = OrderedDict(sorted(material.items(), key=lambda t: t[1]))

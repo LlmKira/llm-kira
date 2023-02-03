@@ -132,7 +132,7 @@ class MatrixPoint(Point):
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _ask_diff = Utils.cosion_sismilarity(pre=prompt, aft=ask)
+            _ask_diff = Utils.cosion_similarity(pre=prompt, aft=ask)
             _ask_diff = _ask_diff * 100
             score = _ask_diff if _ask_diff < 90 else 0
             if score != 0:
@@ -256,7 +256,7 @@ class SinglePoint(Point):
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _ask_diff = Utils.cosion_sismilarity(pre=prompt, aft=ask)
+            _ask_diff = Utils.cosion_similarity(pre=prompt, aft=ask)
             _ask_diff = _ask_diff * 100
             score = _ask_diff if _ask_diff < 90 else 0
             if score != 0:
