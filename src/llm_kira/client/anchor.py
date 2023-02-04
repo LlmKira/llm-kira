@@ -287,6 +287,8 @@ class ChatBot(object):
             role = f"\n{_role}."
             __template.append(role)
             template = ''.join(__template)
+        if template:
+            template = f"{template}<im_end>"
         # Memory Read
         _prompt_memory = self.memory_manger.read_memory(plain_text=False)
 

@@ -50,7 +50,7 @@ receiver = llm_kira.client
 conversation = receiver.Conversation(
     start_name="Human:",
     restart_name="AI:",
-    conversation_id=10096,  # random.randint(1, 10000000),
+    conversation_id=10098,  # random.randint(1, 10000000),
 )
 
 llm = llm_kira.client.llms.OpenAi(
@@ -79,7 +79,7 @@ async def chat():
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text="换谁都被吓走吧"))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text="换谁都被吓走吧<endoftext>"))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
