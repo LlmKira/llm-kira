@@ -147,7 +147,7 @@ class OpenAi(LlmBase):
     def parse_reply(self, reply: List[str]) -> str:
         """处理解码后的列表"""
         _reply = "".join(reply)
-        _reply = DataUtils.remove_suffix(input_string=_reply, suffix="<im_end>")
+        _reply = DataUtils.remove_suffix(input_string=_reply, suffix="<|im_end|>")
         return _reply
 
     def resize_sentence(self, text: str, token: int) -> str:
