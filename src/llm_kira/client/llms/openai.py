@@ -18,6 +18,7 @@ from ..llms.base import LlmBase, LlmBaseParam
 from ..types import LlmReturn
 from ...openai import Completion
 from ...utils.chat import Detect
+from ...utils.data import DataUtils
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -127,7 +128,7 @@ class OpenAi(LlmBase):
                 _text = item.get("text")
                 REPLY.append(_text)
         if not REPLY:
-            REPLY = ["."]
+            REPLY = [""]
         return REPLY
 
     @staticmethod
@@ -145,7 +146,9 @@ class OpenAi(LlmBase):
 
     def parse_reply(self, reply: List[str]) -> str:
         """处理解码后的列表"""
-        return "".join(reply)
+        _reply = "".join(reply)
+        _reply = DataUtils.remove_suffix(input_string=_reply, suffix="<im_end>")
+        return _reply
 
     def resize_sentence(self, text: str, token: int) -> str:
         token = token if token > 5 else 5

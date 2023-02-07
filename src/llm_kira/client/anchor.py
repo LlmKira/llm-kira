@@ -343,4 +343,5 @@ class ChatBot(object):
         return ChatBotReturn(conversation_id=f"{self.profile.conversation_id}",
                              llm=llm_result,
                              ask=prompt_text,
-                             reply=self.llm.parse_reply(llm_result.reply).rstrip("<im_end>"))
+                             reply=self.llm.parse_reply(llm_result.reply)
+                             )

@@ -145,6 +145,15 @@ class DataUtils(object):
         txt = txt.translate(transTable)
         return txt
 
+    @staticmethod
+    def remove_suffix(input_string: str, suffix: str) -> str:
+        """
+        Remove suffix in python < 3.9
+        """
+        if suffix and input_string.endswith(suffix):
+            return input_string[: -len(suffix)]
+        return input_string
+
 
 class RedisConfig(BaseModel):
     host: str = "localhost"
