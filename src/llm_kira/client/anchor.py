@@ -46,34 +46,27 @@ class Preset(object):
             return character
         lang = lang.upper()
         if lang == "ZH":
-            return ["受过教育的", "聪明的",
-                    "友好的", "可爱的",
-                    "幽默地", "有趣地", "温柔地"]
+            return [
+                "受过教育的",
+                "幽默地",
+                "有趣地"
+            ]
         elif lang == "EN":
             return [
-                "educated", "glamorous",
-                "helpful", "girlish",
-                "clever", "friendly",
-                "cute", "talkative",
-                "Humorously"
+                "educated",
+                "helpful",
             ]
         elif lang == "JA":
-            return ["教育された", "魅力的な", "丁寧な", "女性らしい", "賢い", "親切な", "可愛い", "喋っているような", "ユーモラスに", "興味深い",
-                    "優しく"]
+            return ["教育された", "ユーモラスに", "興味深い"]
         else:
             return [
-                "educated", "glamorous",
-                "helpful", "girlish",
-                "clever", "friendly",
-                "cute", "talkative",
-                "Humorously", "Interesting",
-                "Tenderly"
+                "helpful", "Interesting",
             ]
 
     def role(self, role: str = "",
              restart_name: str = "",
              character: str = "",
-             prompt_iscode: bool = False,
+             is_need_help: bool = True,
              lang: str = "ZH"
              ) -> str:
         if role:
@@ -81,14 +74,14 @@ class Preset(object):
         lang = lang.upper()
         role = ""
         if lang == "ZH":
-            role = f"{restart_name} 是一个 {character} 的少女，聪明伶俐，经常帮我"
-            role = self.add_tail(prompt_iscode, sentence=role, tail="是编程大师冠军,")
+            role = f"{restart_name} 是 {character}"
+            role = self.add_tail(is_need_help, sentence=role, tail=" 的助手.")
         elif lang == "EN":
-            role = f"{restart_name} is a {character} girl, always help me"
-            role = self.add_tail(prompt_iscode, sentence=role, tail="a Master Programmer Champion,")
+            role = f"{restart_name} is  {character}.."
+            role = self.add_tail(is_need_help, sentence=role, tail=" Assistant")
         elif lang == "JA":
-            role = f"{restart_name}は{character}の女の子です。 しばし手伝って"
-            role = self.add_tail(prompt_iscode, sentence=role, tail="マスター プログラマー チャンピオンになる,")
+            role = f"{restart_name} は {character}. "
+            role = self.add_tail(is_need_help, sentence=role, tail="指導提供")
         return f"{role} "
 
     def head(self,
@@ -103,13 +96,13 @@ class Preset(object):
         start_name = self.profile.start_name
         restart_name = self.profile.restart_name
         if lang == "ZH":
-            head = f"{start_name} 正在和 {restart_name} 聊天"
+            head = f"<下面是聊天内容>"
             head = self.add_tail(prompt_iscode, sentence=head, tail="提供编程指导,")
         elif lang == "EN":
-            head = f"{start_name} chat with {restart_name} "
+            head = f"<Here is {restart_name}`s Chat>"
             head = self.add_tail(prompt_iscode, sentence=head, tail="Provide programming guidance,")
         elif lang == "JA":
-            head = f"{start_name}と{restart_name}の会話 "
+            head = f"<{start_name}{restart_name}の会話>"
             head = self.add_tail(prompt_iscode, sentence=head, tail="プログラミング指導を提供する,")
         return f"{head} "
 
@@ -235,7 +228,7 @@ class ChatBot(object):
     async def predict(self,
                       prompt: PromptManager,
                       increase: Union[str, Support] = "",
-                      predict_tokens: int = 100,
+                      predict_tokens: Union[int] = 100,
                       parse_reply: Callable[[list], str] = None,
                       llm_param: LlmBaseParam = None,
                       ) -> ChatBotReturn:
@@ -243,14 +236,14 @@ class ChatBot(object):
         if parse_reply:
             self.llm.parse_reply = parse_reply
 
-        predict_tokens += self.llm.tokenizer(self.profile.restart_name)
         if predict_tokens > self.llm.get_token_limit():
+            # Or Auto Cut?
             raise LLMException("Why your predict token > set token limit?")
 
         prompt_text: str = self.prompt.run(raw_list=False)
         # prompt 前向注入
         prompt_raw: list = self.prompt.run(raw_list=True)
-        prompt_raw.pop(-1)
+        prompt_index = prompt_raw.pop(-1)
         __extra_memory = []
         for item in prompt_raw:
             index = round(len(item) / 3) if round(len(item) / 3) > 3 else 10
@@ -266,8 +259,9 @@ class ChatBot(object):
                                                 no_head=True)
                 __extra_memory.clear()
         # Prompt Info
-        prompt_lang: str = Detect.get_text_language(sentence=prompt_text)
-        prompt_iscode: bool = Detect.isCode(sentence=prompt_text)
+        prompt_lang: str = Detect.get_text_language(sentence=prompt_index)
+        prompt_iscode: bool = Detect.isCode(sentence=prompt_index)
+        prompt_help: bool = Detect.isNeedHelp(sentence=prompt_index)
         prompt_preset = Preset(self.profile)
         # Template
         template: str = self.prompt.run_template()
@@ -281,8 +275,8 @@ class ChatBot(object):
             # Character
             character = prompt_preset.character(lang=prompt_lang)
             _role = prompt_preset.role(restart_name=self.profile.restart_name,
+                                       is_need_help=prompt_help,
                                        character=",".join(character),
-                                       prompt_iscode=prompt_iscode,
                                        lang=prompt_lang)
             role = f"\n{_role}."
             __template.append(role)
