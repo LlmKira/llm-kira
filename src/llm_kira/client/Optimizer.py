@@ -15,6 +15,17 @@ from ..utils.chat import Utils, Detect
 from ..utils.data import MsgFlow
 
 
+def get_head_foot(prompt: str, cap: int = 12):
+    body = prompt
+    head = ""
+    if ":" in prompt[:cap]:
+        _split = prompt.split(":", 1)
+        if len(_split) > 1:
+            body = _split[1]
+            head = _split[0]
+    return head, body
+
+
 def random_string(length):
     """
     生成随机字符串
@@ -89,7 +100,7 @@ class MatrixPoint(Point):
         prompt = self.prompt
         # start_token = self.start_token
         if self.memory is None:
-            return []
+            memory = []
         _create_token = self.token_limit - self.extra_token
 
         # 入口检查
@@ -103,43 +114,36 @@ class MatrixPoint(Point):
         memory: list
 
         def forgetting_curve(x):
-            _weight = numpy.exp(-x / 5) * 100 + 10
+            _weight = numpy.exp(-x / 5) * 100
             # 低谷值
             _weight = _weight if _weight > 0 else 0
             # 高度线
             _weight = _weight if _weight < 100 else 100
             # 推底值，防止无法唤起
-            _weight = _weight if _weight > 15 else 5
+            _weight = _weight if _weight > 12 else 12
             return _weight
 
         # 计算初始保留比并初始化
-        memory = list(reversed(memory))
         for i in range(0, len(memory)):
             _forget = forgetting_curve(i)
             if _forget > 5:
                 memory[i]["content"]["weight"] = [_forget]
             else:
                 memory[i]["content"]["weight"] = []
-        memory = list(reversed(memory))
-
-        # 筛选标准发言
-        _index = []
-        for i in range(0, len(memory) - attention):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            if len(ask) < 1 or len(reply) < 1:
-                memory[i]["content"]["weight"].append(-1000)
 
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _ask_diff = Utils.cosion_similarity(pre=prompt, aft=ask)
+            _, _prompt_body = get_head_foot(prompt)
+            _ask_diff = Utils.cosion_similarity(pre=_prompt_body, aft=ask)
             _ask_diff = _ask_diff * 100
-            score = _ask_diff if _ask_diff < 90 else 0
+            score = _ask_diff if _ask_diff < 90 else 1
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
 
         # 主题检索
-        _key = Utils.tfidf_keywords(prompt, topK=5)
+        _, _prompt_body = get_head_foot(prompt)
+        _key = Utils.tfidf_keywords(_prompt_body, topK=5)
         full_score = len(_key)
         if full_score > 5:
             for i in range(0, len(memory)):
@@ -233,21 +237,18 @@ class SinglePoint(Point):
             # 高度线
             _weight = _weight if _weight < 100 else 100
             # 推底值，防止无法唤起
-            _weight = _weight if _weight > 15 else 15
+            _weight = _weight if _weight > 12 else 12
             return _weight
 
         # 计算初始保留比并初始化
-        memory = list(reversed(memory))
         for i in range(0, len(memory)):
             _forget = forgetting_curve(i)
             if _forget > 5:
                 memory[i]["content"]["weight"] = [_forget]
             else:
                 memory[i]["content"]["weight"] = []
-        memory = list(reversed(memory))
 
         # 筛选标准发言
-        _index = []
         for i in range(0, len(memory) - attention):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             if len(ask) < 1 or len(reply) < 1:
@@ -256,14 +257,16 @@ class SinglePoint(Point):
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _ask_diff = Utils.cosion_similarity(pre=prompt, aft=ask)
+            _, _prompt_body = get_head_foot(prompt)
+            _ask_diff = Utils.cosion_similarity(pre=_prompt_body, aft=ask)
             _ask_diff = _ask_diff * 100
-            score = _ask_diff if _ask_diff < 90 else 0
+            score = _ask_diff if _ask_diff < 90 else 1
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
 
         # 主题检索
-        _key = Utils.tfidf_keywords(prompt, topK=5)
+        _, _prompt_body = get_head_foot(prompt)
+        _key = Utils.tfidf_keywords(_prompt_body, topK=5)
         full_score = len(_key)
         if full_score > 5:
             for i in range(0, len(memory)):

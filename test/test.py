@@ -95,7 +95,6 @@ async def chat():
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
     promptManager.clean()
-    return "END"
     promptManager.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
