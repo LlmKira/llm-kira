@@ -5,7 +5,6 @@
 # @Github    ：sudoskys
 import random
 from typing import Union
-
 from ...openai.api.api_utils import load_api
 from ...openai.api.network import request
 from ...utils import setting

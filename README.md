@@ -77,9 +77,9 @@ chat_client = receiver.ChatBot(profile=conversation,
 
 async def chat():
     promptManager = receiver.PromptManager(profile=conversation,
-                                         connect_words="\n",
-                                         template="Templates, custom prefixes"
-                                         )
+                                           connect_words="\n",
+                                           template="Templates, custom prefixes"
+                                           )
     promptManager.insert(item=PromptItem(start=conversation.start_name, text="My id is 1596321"))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
                                          prompt=promptManager,

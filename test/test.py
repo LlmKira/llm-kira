@@ -50,7 +50,7 @@ receiver = llm_kira.client
 conversation = receiver.Conversation(
     start_name="Human:",
     restart_name="AI:",
-    conversation_id=12091,  # random.randint(1, 10000000),
+    conversation_id=12093,  # random.randint(1, 10000000),
 )
 
 llm = llm_kira.client.llms.OpenAi(
@@ -80,7 +80,7 @@ async def chat():
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text="你爱我吗"))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text='Python打印helloworld，使用双引号和单引号'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
@@ -92,10 +92,11 @@ async def chat():
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
     print(f"usage:{response.llm.usage}")
-    print(f"usage:{response.llm.raw}")
+    print(f"raw:{response.llm.raw}")
     print(f"---{response.llm.time}---")
     promptManager.clean()
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text="说出我的账号？"))
+    return "END"
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text='说出:`""`'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
         prompt=promptManager,

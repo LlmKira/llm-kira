@@ -66,7 +66,7 @@ async def request(
     config.update(kwargs)
     if json_body:
         config["headers"]["Content-Type"] = "application/json"
-        config["data"] = json.dumps(config["data"])
+        config["data"] = json.dumps(config["data"]).encode()
 
     # SSL
     # config["ssl"] = False
