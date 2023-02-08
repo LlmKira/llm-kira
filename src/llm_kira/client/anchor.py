@@ -96,13 +96,13 @@ class Preset(object):
         start_name = self.profile.start_name
         restart_name = self.profile.restart_name
         if lang == "ZH":
-            head = f"<下面是聊天内容>"
+            head = f"|下面是聊天内容|"
             head = self.add_tail(prompt_iscode, sentence=head, tail="提供编程指导,")
         elif lang == "EN":
-            head = f"<Here is {restart_name}`s Chat>"
+            head = f"|Here is {restart_name}`s Chat|"
             head = self.add_tail(prompt_iscode, sentence=head, tail="Provide programming guidance,")
         elif lang == "JA":
-            head = f"<{start_name}{restart_name}の会話>"
+            head = f"|{start_name}{restart_name}の会話|"
             head = self.add_tail(prompt_iscode, sentence=head, tail="プログラミング指導を提供する,")
         return f"{head} "
 
@@ -282,7 +282,7 @@ class ChatBot(object):
             __template.append(role)
             template = ''.join(__template)
         if template:
-            template = f"{template}<|im_end|>"
+            template = f"{template}. "
         # Memory Read
         _prompt_memory = self.memory_manger.read_memory(plain_text=False)
 
