@@ -15,6 +15,8 @@ class RedisConfig(BaseModel):
 
 llmRetryAttempt = 3
 llmRetryTime = 3
+llmRetryTimeMin = 3
+llmRetryTimeMax = 60
 redisSetting = RedisConfig()
 dbFile = "kira_llm.db"
 proxyUrl = ""

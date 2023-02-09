@@ -11,7 +11,7 @@ import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 # from loguru import logger
 from pydantic import BaseModel, Field
-from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_fixed
+from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_fixed, wait_exponential
 from ..agent import Conversation
 from ..llms.base import LlmBase, LlmBaseParam
 from ..types import LlmReturn
@@ -19,7 +19,7 @@ from ...openai import Completion
 from ...utils.chat import Detect
 from ...utils.data import DataUtils
 #
-from ...utils.setting import llmRetryAttempt, llmRetryTime
+from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
 from ...openai.api.network import RateLimitError, ServiceUnavailableError
 
 
@@ -196,7 +196,8 @@ class OpenAi(LlmBase):
 
     @retry(retry=retry_if_exception_type((RateLimitError, ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
-           wait=wait_fixed(llmRetryTime))
+           wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
+           reraise=True)
     async def run(self,
                   prompt: str,
                   validate: Union[List[str], None] = None,
