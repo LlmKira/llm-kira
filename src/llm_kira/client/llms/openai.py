@@ -194,7 +194,7 @@ class OpenAi(LlmBase):
         else:
             return 4000
 
-    @retry(retry=retry_if_exception_type(Union[RateLimitError, ServiceUnavailableError]),
+    @retry(retry=retry_if_exception_type((RateLimitError, ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
            wait=wait_fixed(llmRetryTime))
     async def run(self,
