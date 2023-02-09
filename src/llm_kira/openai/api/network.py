@@ -21,6 +21,30 @@ import httpx
 __session_pool = {}
 
 
+class AuthenticationError(Exception):
+    pass
+
+
+class RateLimitError(Exception):
+    pass
+
+
+class ServiceUnavailableError(Exception):
+    pass
+
+
+def error_handler(code, message: str):
+    message = str(message)
+    if code == 429:
+        raise RateLimitError(message)
+    elif code == 500:
+        raise ServiceUnavailableError(message)
+    elif code == 401:
+        raise AuthenticationError(message)
+    else:
+        raise ServiceUnavailableError(message)
+
+
 async def request(
         method: str,
         url: str,
@@ -90,12 +114,12 @@ async def request(
     raw_data = resp.text
     req_data: dict
     req_data = json.loads(raw_data)
-    ERROR = req_data.get("error")
-    if ERROR:
+    _error = req_data.get("error")
+    if _error:
         # if ERROR.get('type') == "insufficient_quota":
         if call_func:
             call_func(req_data, auth)
-        raise RuntimeError(f"{ERROR.get('type')}:{ERROR.get('message')}")
+        error_handler(code=resp.status_code, message=f"{resp.status_code}:{_error.get('type')}:{_error.get('message')}")
     return req_data
 
 
