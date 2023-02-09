@@ -19,8 +19,8 @@ from ...openai import Completion
 from ...utils.chat import Detect
 from ...utils.data import DataUtils
 #
-from ...utils.setting import llmRetryAttempt
-from ...openai.api.network import RateLimitError
+from ...utils.setting import llmRetryAttempt, llmRetryTime
+from ...openai.api.network import RateLimitError, ServiceUnavailableError
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -194,7 +194,9 @@ class OpenAi(LlmBase):
         else:
             return 4000
 
-    @retry(retry=retry_if_exception_type(RateLimitError), stop=stop_after_attempt(llmRetryAttempt), wait=wait_fixed(2))
+    @retry(retry=retry_if_exception_type(Union[RateLimitError, ServiceUnavailableError]),
+           stop=stop_after_attempt(llmRetryAttempt),
+           wait=wait_fixed(llmRetryTime))
     async def run(self,
                   prompt: str,
                   validate: Union[List[str], None] = None,

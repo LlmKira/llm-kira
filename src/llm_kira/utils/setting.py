@@ -13,7 +13,8 @@ class RedisConfig(BaseModel):
     password: str = None
 
 
-llmRetryAttempt = 2
+llmRetryAttempt = 3
+llmRetryTime = 3
 redisSetting = RedisConfig()
 dbFile = "kira_llm.db"
 proxyUrl = ""
