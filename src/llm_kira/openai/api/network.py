@@ -18,19 +18,9 @@ import asyncio
 import atexit
 import httpx
 
+from ...error import RateLimitError, ServiceUnavailableError, AuthenticationError
+
 __session_pool = {}
-
-
-class AuthenticationError(Exception):
-    pass
-
-
-class RateLimitError(Exception):
-    pass
-
-
-class ServiceUnavailableError(Exception):
-    pass
 
 
 def error_handler(code, message: str):

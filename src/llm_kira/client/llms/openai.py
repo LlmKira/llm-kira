@@ -153,28 +153,30 @@ class OpenAi(LlmBase):
         return _reply
 
     def resize_sentence(self, text: str, token: int) -> str:
-        token = token if token > 5 else 5
-        while self.tokenizer(text) > token:
+        token = token if token > 0 else 0
+        while len(text) > 4 and self.tokenizer(text) > token:
             text = text[4:]
         return text
 
     def resize_context(self, head: list, body: list, foot: list, token: int) -> str:
+        # 去空
         body = [item for item in body if item]
+        # 强制测量
         token = token if token > 5 else 5
-        _head = '\n'.join(head) + "\n"
-        _body = "\n".join(body) + "\n"
-        _foot = ''.join(foot)
-        # Force Resize Head
-        _head = _head[:int(token * 0.8)]
-        _all = _head + _body + _foot
-        while self.tokenizer(_all) > token:
-            if len(body) > 2:
-                body.pop(0)
-                _body = "\n".join(body)
-            else:
-                _body = _body[4:]
-            _all = _head + _body + _foot
-        self.resize_sentence(_all, token=token)
+
+        # 弹性计算
+        def _connect(_head, _body, _foot):
+            _head = '\n'.join(_head) + "\n"
+            _body = "\n".join(_body) + "\n"
+            _foot = ''.join(_foot)
+            # Resize
+            return _head + _body + _foot
+
+        _all = _connect(head, body, foot)
+        while len(body) > 3 and self.tokenizer(_all) >= token:
+            body.pop(0)
+            _all = _connect(head, body, foot)
+        _all = self.resize_sentence(_all, token=token)
         return _all
 
     @staticmethod

@@ -56,7 +56,7 @@ conversation = receiver.Conversation(
 llm = llm_kira.client.llms.OpenAi(
     profile=conversation,
     api_key=openaiApiKey,
-    token_limit=3700,
+    token_limit=550,
     auto_penalty=False,
     call_func=None,
 )

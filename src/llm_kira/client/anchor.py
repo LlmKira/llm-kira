@@ -13,7 +13,8 @@ from . import Optimizer
 from .enhance import Support
 from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
-from .types import LlmReturn, LLMException
+from .types import LlmReturn
+from ..error import LLMException
 from ..utils.chat import Detect
 from ..utils.data import MsgFlow
 # 基于 Completion 上层
@@ -319,6 +320,9 @@ class ChatBot(object):
 
         # Resize
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
+        _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
+        if _llm_result_limit < 10:
+            logger.warning("llm predict token lower than 10.may limit too low or predict token too high")
         _prompt = self.llm.resize_context(head=_prompt_head,
                                           body=_prompt_body,
                                           foot=_prompt_foot,

@@ -48,7 +48,3 @@ class MemoryItem(BaseModel):
 class Memory_Flow(BaseModel):
     content: MemoryItem
     time: int = int(time.time() * 1000)
-
-
-class LLMException(BaseException):
-    pass
