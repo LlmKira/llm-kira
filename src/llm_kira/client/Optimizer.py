@@ -23,6 +23,8 @@ def get_head_foot(prompt: str, cap: int = 12):
         if len(_split) > 1:
             body = _split[1]
             head = _split[0]
+    if not body:
+        return "."
     return head, body
 
 

@@ -226,6 +226,7 @@ class MsgFlow(object):
         if not sign and ":" in _ask_ and ':' in _reply_:
             _ask_ = _ask_.split(":", 1)[1]
             _reply_ = _reply_.split(":", 1)[1]
+        # 自动合并机制
         if _ask_ == _reply_:
             _reply_ = ""
         return _ask_, _reply_
