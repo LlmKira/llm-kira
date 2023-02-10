@@ -136,16 +136,14 @@ class MatrixPoint(Point):
         # 相似度检索
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _, _prompt_body = get_head_foot(prompt)
-            _ask_diff = Utils.cosion_similarity(pre=_prompt_body, aft=ask)
+            _ask_diff = Utils.cosion_similarity(pre=prompt, aft=ask)
             _ask_diff = _ask_diff * 100
             score = _ask_diff if _ask_diff < 90 else 1
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
 
         # 主题检索
-        _, _prompt_body = get_head_foot(prompt)
-        _key = Utils.tfidf_keywords(_prompt_body, topK=5)
+        _key = Utils.tfidf_keywords(prompt, topK=5)
         full_score = len(_key)
         if full_score > 5:
             for i in range(0, len(memory)):
@@ -267,8 +265,7 @@ class SinglePoint(Point):
                 memory[i]["content"]["weight"].append(score)
 
         # 主题检索
-        _, _prompt_body = get_head_foot(prompt)
-        _key = Utils.tfidf_keywords(_prompt_body, topK=5)
+        _key = Utils.tfidf_keywords(prompt, topK=5)
         full_score = len(_key)
         if full_score > 5:
             for i in range(0, len(memory)):

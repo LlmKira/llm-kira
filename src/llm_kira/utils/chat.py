@@ -186,10 +186,6 @@ class Utils(object):
         :return: 余弦值
         """
         _cos = CosionSimilarity()
-        if not pre:
-            pre = "0"
-        if not aft:
-            aft = "1"
         _sim = _cos.similarity(pre, aft)
         return _sim
 
