@@ -24,7 +24,7 @@ def get_head_foot(prompt: str, cap: int = 12):
             body = _split[1]
             head = _split[0]
     if not body:
-        return "."
+        body = "."
     return head, body
 
 
