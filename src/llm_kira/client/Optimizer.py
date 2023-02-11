@@ -379,7 +379,7 @@ class RelatePoint(Point):
         for i in range(0, len(memory)):
             _hour_cal = cal_time_seconds(stamp1=time.time(), stamp2=memory[i]['time'] / 1000) / 3600
             _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
-            _forget = sim_forget(sim=1,
+            _forget = sim_forget(sim=0.5,
                                  hour=_hour_cal,
                                  rank=0.5)
             memory[i]["content"]["weight"] = [_forget]
