@@ -24,7 +24,6 @@ def random_string(length):
     string = ""
     for i in range(length):
         string += chr(random.randint(97, 122))  # 生成小写字母
-
     return string
 
 

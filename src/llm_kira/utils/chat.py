@@ -8,6 +8,7 @@ import random
 from typing import Union, Callable, List
 
 from llm_kira.error import LLMException
+from .data import singleton
 from ..client.text_analysis_tools.api.keywords.tfidf import TfidfKeywords
 from ..client.text_analysis_tools.api.sentiment.sentiment import SentimentAnalysis
 from ..client.text_analysis_tools.api.summarization.textrank_summarization import TextRankSummarization
@@ -17,16 +18,8 @@ from ..client.text_analysis_tools.api.text_similarity.cosion import CosionSimila
 from ..client.text_analysis_tools.api.text_similarity.edit import EditSimilarity
 from ..client.text_analysis_tools.api.keyphrase.keyphrase import KeyPhraseExtraction
 import tiktoken
-from .setting import SimilarityModelInit
 
 gpt_tokenizer = tiktoken.get_encoding("gpt2")
-if SimilarityModelInit:
-    from similarities import Similarity
-
-    SimilarityModel = Similarity(
-        model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-else:
-    SimilarityModel = None
 
 
 def default_gpt_tokenizer(text, raw: bool = False) -> Union[int, list]:
@@ -205,9 +198,34 @@ class Utils(object):
         return gpt_tokenizer
 
 
-class Sim(object):
+@singleton
+class SimilarityUtils(object):
     def __init__(self):
-        pass
+        from similarities import Similarity
+        self.SimilarityModel = Similarity(
+            model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+    def similarity(self, query: str, corpus: List[str], topn: int = 20) -> dict:
+        if not self.SimilarityModel:
+            raise LLMException("setting.SimilarityModelInit Was Forbidden!")
+        self.SimilarityModel.corpus = {}
+        self.SimilarityModel.corpus_ids_map = {}
+        self.SimilarityModel.corpus_embeddings = []
+        self.SimilarityModel.add_corpus(corpus)
+        res = self.SimilarityModel.most_similar(queries=query, topn=topn)
+        _result = {}
+        for q_id, c in res.items():
+            for corpus_id, score in c.items():
+                _result[f"{self.SimilarityModel.corpus[corpus_id]}"] = float(score)
+        return _result
+
+    def corpus_similarity(self, sentences1, sentences2):
+        model = self.Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        similarity_score = model.similarity(sentences1, sentences2)
+        return float(similarity_score)
+
+
+class Sim(object):
 
     @staticmethod
     def cosion_similarity(pre, aft):
@@ -239,27 +257,6 @@ class Sim(object):
         sim = simhash.run_simhash(pre, aft)
         # print("simhash result: {}\n".format(sim))
         return sim
-
-    def similarity(self, query: str, corpus: List[str], topn: int = 20) -> dict:
-        if not SimilarityModel:
-            raise LLMException("setting.SimilarityModelInit Was Forbidden!")
-        SimilarityModel.corpus = {}
-        SimilarityModel.corpus_ids_map = {}
-        SimilarityModel.corpus_embeddings = []
-        SimilarityModel.add_corpus(corpus)
-        res = SimilarityModel.most_similar(queries=query, topn=topn)
-        _result = {}
-        for q_id, c in res.items():
-            for corpus_id, score in c.items():
-                _result[f"{SimilarityModel.corpus[corpus_id]}"] = float(score)
-        return _result
-
-    @staticmethod
-    def corpus_similarity(sentences1, sentences2):
-        from similarities import Similarity
-        model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-        similarity_score = model.similarity(sentences1, sentences2)
-        return float(similarity_score)
 
 
 class Cut(object):

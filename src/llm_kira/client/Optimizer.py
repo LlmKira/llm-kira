@@ -12,7 +12,7 @@ from typing import List
 import datetime
 import numpy
 from .types import Memory_Flow
-from ..utils.chat import Utils, Detect, Sim
+from ..utils.chat import Utils, Sim, SimilarityUtils
 from ..utils.data import MsgFlow
 
 
@@ -384,7 +384,7 @@ class RelatePoint(Point):
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             _target.append(f"{ask}{reply}")
-        _sim_ = Sim().similarity(query=_prompt_body, corpus=_target, topn=10)
+        _sim_ = SimilarityUtils().similarity(query=_prompt_body, corpus=_target, topn=10)
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             _key = f"{ask}{reply}"
