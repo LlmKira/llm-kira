@@ -247,24 +247,19 @@ class SinglePoint(Point):
                 memory[item] = memory[item].dict()
         memory: list
         memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-
-        def forgetting_curve(x):
-            _weight = numpy.exp(-x / 5) * 100
-            # 低谷值
-            _weight = _weight if _weight > 0 else 0
-            # 高度线
-            _weight = _weight if _weight < 100 else 100
-            # 推底值，防止无法唤起
-            _weight = _weight if _weight > 12 else 12
-            return _weight
+        # Body
+        _, _prompt_body = get_head_foot(prompt)
+        if len(_prompt_body) < 2:
+            _prompt_body = _prompt_body + "[short sentence]"
 
         # 计算初始保留比并初始化
         for i in range(0, len(memory)):
-            _forget = forgetting_curve(i)
-            if _forget > 5:
-                memory[i]["content"]["weight"] = [_forget]
-            else:
-                memory[i]["content"]["weight"] = []
+            _hour_cal = cal_time_seconds(stamp1=time.time(), stamp2=memory[i]['time'] / 1000) / 3600
+            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
+            _forget = sim_forget(sim=0.5,
+                                 hour=_hour_cal,
+                                 rank=0.5) * 100
+            memory[i]["content"]["weight"] = [_forget]
 
         # 筛选标准发言
         for i in range(0, len(memory) - attention):
@@ -381,7 +376,7 @@ class RelatePoint(Point):
             _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
             _forget = sim_forget(sim=0.5,
                                  hour=_hour_cal,
-                                 rank=0.5)
+                                 rank=0.5) * 100
             memory[i]["content"]["weight"] = [_forget]
 
         # 相似度检索
@@ -389,7 +384,7 @@ class RelatePoint(Point):
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             _target.append(f"{ask}{reply}")
-        _sim_ = Sim.similarity(query=_prompt_body, corpus=_target)
+        _sim_ = Sim().similarity(query=_prompt_body, corpus=_target, topn=10)
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             _key = f"{ask}{reply}"

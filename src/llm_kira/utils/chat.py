@@ -7,7 +7,7 @@ import re
 import random
 from typing import Union, Callable, List
 
-from .langdetect.langdetect import LangDetector
+from llm_kira.error import LLMException
 from ..client.text_analysis_tools.api.keywords.tfidf import TfidfKeywords
 from ..client.text_analysis_tools.api.sentiment.sentiment import SentimentAnalysis
 from ..client.text_analysis_tools.api.summarization.textrank_summarization import TextRankSummarization
@@ -17,8 +17,16 @@ from ..client.text_analysis_tools.api.text_similarity.cosion import CosionSimila
 from ..client.text_analysis_tools.api.text_similarity.edit import EditSimilarity
 from ..client.text_analysis_tools.api.keyphrase.keyphrase import KeyPhraseExtraction
 import tiktoken
+from .setting import SimilarityModelInit
 
 gpt_tokenizer = tiktoken.get_encoding("gpt2")
+if SimilarityModelInit:
+    from similarities import Similarity
+
+    SimilarityModel = Similarity(
+        model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+else:
+    SimilarityModel = None
 
 
 def default_gpt_tokenizer(text, raw: bool = False) -> Union[int, list]:
@@ -198,6 +206,9 @@ class Utils(object):
 
 
 class Sim(object):
+    def __init__(self):
+        pass
+
     @staticmethod
     def cosion_similarity(pre, aft):
         """
@@ -229,16 +240,18 @@ class Sim(object):
         # print("simhash result: {}\n".format(sim))
         return sim
 
-    @staticmethod
-    def similarity(query: str, corpus: List[str]) -> dict:
-        from similarities import Similarity
-        model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-        model.add_corpus(corpus)
-        res = model.most_similar(queries=query, topn=20)
+    def similarity(self, query: str, corpus: List[str], topn: int = 20) -> dict:
+        if not SimilarityModel:
+            raise LLMException("setting.SimilarityModelInit Was Forbidden!")
+        SimilarityModel.corpus = {}
+        SimilarityModel.corpus_ids_map = {}
+        SimilarityModel.corpus_embeddings = []
+        SimilarityModel.add_corpus(corpus)
+        res = SimilarityModel.most_similar(queries=query, topn=topn)
         _result = {}
         for q_id, c in res.items():
             for corpus_id, score in c.items():
-                _result[f"{model.corpus[corpus_id]}"] = float(score)
+                _result[f"{SimilarityModel.corpus[corpus_id]}"] = float(score)
         return _result
 
     @staticmethod

@@ -13,8 +13,8 @@ class RedisConfig(BaseModel):
     password: str = None
 
 
+SimilarityModelInit = True
 llmRetryAttempt = 3
-
 # 2^x * multiplier 秒，x为重试次数，最小4秒，最多10秒
 llmRetryTime = 1
 llmRetryTimeMin = 3
