@@ -351,7 +351,7 @@ class RelatePoint(Point):
         self.tokenizer = tokenizer
 
     def run(self) -> list:
-        # 单条消息的内容 {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]}
+        # 单条消息的内容 {content {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]},time xxxx}
         memory = self.memory
         attention = self.attention
         prompt = self.prompt
@@ -359,11 +359,9 @@ class RelatePoint(Point):
         if self.memory is None:
             memory = []
         _create_token = self.token_limit - self.extra_token
-
         # 入口检查
         if len(memory) - attention < 0:
             return convert_msgflow_to_list(memory)
-
         # 转换为
         for item in range(len(memory)):
             if isinstance(memory[item], Memory_Flow):
@@ -372,28 +370,19 @@ class RelatePoint(Point):
         # 重排 prompt 在开头
         memory = sorted(memory, key=lambda x: x['time'], reverse=True)
 
-        def forgetting_curve(x):
-            _weight = numpy.exp(-x / 5) * 100
-            # 低谷值
-            _weight = _weight if _weight > 0 else 0
-            # 高度线
-            _weight = _weight if _weight < 100 else 100
-            # 推底值，防止无法唤起
-            _weight = _weight if _weight > 10 else 10
-            return _weight
+        # Body
+        _, _prompt_body = get_head_foot(prompt)
+        if len(_prompt_body) < 2:
+            _prompt_body = _prompt_body + "[short sentence]"
 
         # 计算初始保留比并初始化
         for i in range(0, len(memory)):
-            _forget = forgetting_curve(i)
-            if _forget > 50:
-                memory[i]["content"]["weight"] = [_forget]
-            else:
-                memory[i]["content"]["weight"] = []
-        # Body
-        _, _prompt_body = get_head_foot(prompt)
-
-        if len(_prompt_body) < 2:
-            _prompt_body = _prompt_body + "[short sentence]"
+            _hour_cal = cal_time_seconds(stamp1=time.time(), stamp2=memory[i]['time'] / 1000) / 3600
+            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
+            _forget = sim_forget(sim=1,
+                                 hour=_hour_cal,
+                                 rank=0.5)
+            memory[i]["content"]["weight"] = [_forget]
 
         # 相似度检索
         _target = []
@@ -424,14 +413,9 @@ class RelatePoint(Point):
             total = len(memory[i]["content"]["weight"])
             full_score = total * 100 + 1
             score = sum(memory[i]["content"]["weight"])
-            _level = (score / full_score) * 100
+            level = (score / full_score) * 100
             ask, reply = MsgFlow.get_content(memory[i], sign=True)
-            _hour_cal = cal_time_seconds(stamp1=time.time(), stamp2=memory[i]['time'] / 1000) / 3600
-            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
-            level = sim_forget(sim=_level / 100,
-                               hour=_hour_cal,
-                               rank=0.5)
-            if level * 100 > 50:
+            if level > 50:
                 _now_token += self.tokenizer(f"{ask}{reply}")
                 if _now_token > _create_token:
                     break
