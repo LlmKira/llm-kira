@@ -206,8 +206,6 @@ class SimilarityUtils(object):
             model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
     def similarity(self, query: str, corpus: List[str], topn: int = 20) -> dict:
-        if not self.SimilarityModel:
-            raise LLMException("setting.SimilarityModelInit Was Forbidden!")
         self.SimilarityModel.corpus = {}
         self.SimilarityModel.corpus_ids_map = {}
         self.SimilarityModel.corpus_embeddings = []
