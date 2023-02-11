@@ -4,6 +4,15 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import hashlib
+from loguru import logger
+
+
+def getStrId(string):
+    bytes_str = string.encode('utf-8')
+    md5 = hashlib.md5()
+    md5.update(bytes_str)
+    h16 = md5.hexdigest()
+    return int(h16, 16)
 
 
 class Conversation(object):
@@ -18,6 +27,9 @@ class Conversation(object):
         restart_name: 回答时候使用的名字
         """
         self.hash_secret = "LLM"
+        if not conversation_id:
+            conversation_id = getStrId(start_name)
+            logger.warning("conversation_id empty!!!")
         self.conversation_id = str(conversation_id)
         self.start_name = start_name.strip(":").strip("：")
         self.restart_name = restart_name.strip(":").strip("：")

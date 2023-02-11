@@ -8,7 +8,7 @@ from loguru import logger
 
 from ....utils import setting
 from ....utils import network
-from ....utils.chat import Utils
+from ....utils.chat import Utils, Sim
 
 gpt_tokenizer = tiktoken.get_encoding("gpt2")
 
@@ -99,7 +99,7 @@ class NlP(object):
             prev_len = len(material)
             _pre = material[0]
             _afe = material[1]
-            sim = Utils.simhash_similarity(pre=_pre, aft=_afe)
+            sim = Sim.simhash_similarity(pre=_pre, aft=_afe)
             if sim < 12:
                 _remo = _afe if len(_afe) > len(_pre) else _pre
                 # 移除过于相似的
@@ -115,7 +115,7 @@ class NlP(object):
                     continue
                 _pre = material[i]
                 _afe = material[i + 1]
-                sim = Utils.cosion_similarity(pre=_pre, aft=_afe)
+                sim = Sim.cosion_similarity(pre=_pre, aft=_afe)
                 if sim > 0.7:
                     _remo = _afe if len(_afe) > len(_pre) else _pre
                     # 移除过于相似的
@@ -129,7 +129,7 @@ class NlP(object):
         material = list(material_.keys())
         _top_table = {}
         for item in material:
-            _top_table[item] = Utils.cosion_similarity(pre=prompt, aft=item)
+            _top_table[item] = Sim.cosion_similarity(pre=prompt, aft=item)
         material = {k: v for k, v in _top_table.items() if v > 0.15}
         # 搜索引擎比相似度算法靠谱所以注释掉了
         # material = OrderedDict(sorted(material.items(), key=lambda t: t[1]))

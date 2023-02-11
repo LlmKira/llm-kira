@@ -5,7 +5,7 @@
 # @Github    ：sudoskys
 import re
 import random
-from typing import Union, Callable
+from typing import Union, Callable, List
 
 from .langdetect.langdetect import LangDetector
 from ..client.text_analysis_tools.api.keywords.tfidf import TfidfKeywords
@@ -180,6 +180,25 @@ class Utils(object):
         return _sum
 
     @staticmethod
+    def tfidf_keywords(keywords, delete_stopwords=True, topK=5, withWeight=False):
+        """
+        tfidf 提取关键词
+        :param keywords:
+        :param delete_stopwords: 是否删除停用词
+        :param topK: 输出关键词个数
+        :param withWeight: 是否输出权重
+        :return: [(word, weight), (word1, weight1)]
+        """
+        tfidf = TfidfKeywords(delete_stopwords=delete_stopwords, topK=topK, withWeight=withWeight)
+        return tfidf.keywords(keywords)
+
+    @staticmethod
+    def get_gpt2_tokenizer():
+        return gpt_tokenizer
+
+
+class Sim(object):
+    @staticmethod
     def cosion_similarity(pre, aft):
         """
         基于余弦计算文本相似性 0 - 1 (1为最相似)
@@ -192,8 +211,8 @@ class Utils(object):
     @staticmethod
     def edit_similarity(pre, aft):
         """
-        基于余弦计算文本相似性 0 - 1 (1为最相似)
-        :return: 余弦值
+        基于编辑计算文本相似性
+        :return: 差距
         """
         _cos = EditSimilarity()
         _sim = _cos.edit_dist(pre, aft)
@@ -211,21 +230,23 @@ class Utils(object):
         return sim
 
     @staticmethod
-    def tfidf_keywords(keywords, delete_stopwords=True, topK=5, withWeight=False):
-        """
-        tfidf 提取关键词
-        :param keywords:
-        :param delete_stopwords: 是否删除停用词
-        :param topK: 输出关键词个数
-        :param withWeight: 是否输出权重
-        :return: [(word, weight), (word1, weight1)]
-        """
-        tfidf = TfidfKeywords(delete_stopwords=delete_stopwords, topK=topK, withWeight=withWeight)
-        return tfidf.keywords(keywords)
+    def similarity(query: str, corpus: List[str]) -> dict:
+        from similarities import Similarity
+        model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        model.add_corpus(corpus)
+        res = model.most_similar(queries=query, topn=20)
+        _result = {}
+        for q_id, c in res.items():
+            for corpus_id, score in c.items():
+                _result[f"{model.corpus[corpus_id]}"] = float(score)
+        return _result
 
     @staticmethod
-    def get_gpt2_tokenizer():
-        return gpt_tokenizer
+    def corpus_similarity(sentences1, sentences2):
+        from similarities import Similarity
+        model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        similarity_score = model.similarity(sentences1, sentences2)
+        return float(similarity_score)
 
 
 class Cut(object):

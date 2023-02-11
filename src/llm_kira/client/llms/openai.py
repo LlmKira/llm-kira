@@ -173,7 +173,7 @@ class OpenAi(LlmBase):
             return _head + _body + _foot
 
         _all = _connect(head, body, foot)
-        while len(body) > 3 and self.tokenizer(_all) >= token:
+        while len(body) > 2 and self.tokenizer(_all) >= token:
             body.pop(0)
             _all = _connect(head, body, foot)
         _all = self.resize_sentence(_all, token=token)

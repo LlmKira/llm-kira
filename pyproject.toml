@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llm_kira"
-version = "0.3.7"
+version = "0.3.8"
 description = "chatbot client for llm"
 authors = ["sudoskys <coldlando@hotmail.com>"]
 maintainers = [
@@ -29,6 +29,7 @@ tiktoken = "^0.1.2"
 duckduckgo-search = "2.8.0"
 tenacity = "^8.2.0"
 fasttext-wheel = "^0.9.2"
+similarities = "^1.0.4"
 
 
 [build-system]

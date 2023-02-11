@@ -56,7 +56,7 @@ conversation = receiver.Conversation(
 llm = llm_kira.client.llms.OpenAi(
     profile=conversation,
     api_key=openaiApiKey,
-    token_limit=550,
+    token_limit=4000,
     auto_penalty=False,
     call_func=None,
 )
@@ -64,7 +64,7 @@ llm = llm_kira.client.llms.OpenAi(
 mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                memory_manger=mem,
-                               optimizer=Optimizer.SinglePoint,
+                               optimizer=Optimizer.RelatePoint,
                                llm_model=llm)
 
 
@@ -80,7 +80,7 @@ async def chat():
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text='Python打印helloworld，使用双引号和单引号'))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text='今天天气怎么说'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
@@ -137,7 +137,9 @@ async def Sentiment():
 
 
 async def Sim():
-    response = llm_kira.utils.chat.Utils.edit_similarity(pre="4552", aft="1224")
+    # response = llm_kira.utils.chat.Utils.edit_similarity(pre="4552", aft="1224")
+    # print(response)
+    response = llm_kira.utils.chat.Sim.cosion_similarity(pre="", aft="你是不是啊")
     print(response)
 
 

@@ -28,7 +28,7 @@ class CosionSimilarity(object):
 
         text1_vector = [1 if word in text1_words else 0 for word in all_words]
         text2_vector = [1 if word in text2_words else 0 for word in all_words]
-        if not text1_vector and not text2_vector:
+        if not text1_vector or not text2_vector:
             return 0
         return cosine_similarity([text1_vector], [text2_vector])[0][0]
 
