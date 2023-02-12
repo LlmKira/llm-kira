@@ -158,7 +158,12 @@ class OpenAi(LlmBase):
             text = text[4:]
         return text
 
-    def resize_context(self, head: list, body: list, foot: list, token: int) -> str:
+    def summary_context(self, history: str) -> str:
+        return history
+
+    def resize_context(self, head: list, body: list, foot: list = None, token: int = 5) -> str:
+        if foot is None:
+            foot = []
         # 去空
         body = [item for item in body if item]
         # 强制测量
@@ -276,11 +281,11 @@ class OpenAi(LlmBase):
             **_request_arg
         )
         reply = self.parse_response(response)
-        usage = self.parse_usage(response)
+        self.profile.update_usage(usage=self.parse_usage(response))
         return LlmReturn(model_flag=llm_param.model_name,
                          raw=response,
                          prompt=prompt,
-                         usage=usage,
+                         usage=self.profile.get_round_usage(),
                          time=int(time.time()),
                          reply=reply,
                          )

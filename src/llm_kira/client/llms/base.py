@@ -56,7 +56,13 @@ class LlmBase(ABC):
         return text[:token]
 
     @abstractmethod
-    def resize_context(self, head: list, body: list, foot: list, token: int) -> str:
+    def summary_context(self, history: str) -> str:
+        return history
+
+    @abstractmethod
+    def resize_context(self, head: list, body: list, foot: list = None, token: int = 0) -> str:
+        if foot is None:
+            foot = []
         _all = ''.join(head + body + foot)
         return self.resize_sentence(_all, token=token)
 

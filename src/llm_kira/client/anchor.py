@@ -292,6 +292,7 @@ class ChatBot(object):
         _prompt_body = []
         _prompt_foot = []
         _prompt_foot.extend([f"{prompt_text}"])
+        _prompt_foot.append(f"\n{self.profile.restart_name}:")
         # Enhance
         if isinstance(increase, str):
             _appendix = increase
@@ -299,6 +300,7 @@ class ChatBot(object):
             _appendix = await increase.run()
         _prompt_head.append(template)
         _prompt_head.append(_appendix)
+
         # Cut Size
         _body_token = int(
             predict_tokens +
@@ -322,14 +324,19 @@ class ChatBot(object):
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
         if _llm_result_limit < 10:
-            logger.warning("llm predict token lower than 10.may limit too low or predict token too high")
+            logger.warning("llm free mem lower than 10...may limit too low or predict token too high")
         _prompt = self.llm.resize_context(head=_prompt_head,
                                           body=_prompt_body,
-                                          foot=_prompt_foot,
-                                          token=_llm_result_limit)
+                                          token=_llm_result_limit - self.llm.tokenizer("".join(_prompt_foot)))
+
+        # Summary
+        _prompt = self.llm.summary_context(_prompt)
+        _prompt: str
+
+        # Connect
+        _prompt = _prompt + "\n".join(_prompt_foot)
 
         # Stick Them
-        _prompt = _prompt + f"\n{self.profile.restart_name}:"
         if not prompt_iscode:
             _prompt = _prompt.replace("\n\n", "\n")
 
