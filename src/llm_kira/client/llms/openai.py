@@ -158,8 +158,15 @@ class OpenAi(LlmBase):
             text = text[4:]
         return text
 
-    def summary_context(self, history: str) -> str:
-        return history
+    async def task_context(self, task: str, prompt: str, predict_tokens: int = 500) -> LlmReturn:
+        prompt = self.resize_sentence(prompt, 1200)
+        _prompt = f"Text: {prompt}\n{task}: "
+        llm_result = await self.run(prompt=_prompt,
+                                    predict_tokens=predict_tokens,
+                                    llm_param=OpenAiParam(model_name="text-davinci-003"),
+                                    stop_words=["\n\n"]
+                                    )
+        return llm_result
 
     def resize_context(self, head: list, body: list, foot: list = None, token: int = 5) -> str:
         if foot is None:
@@ -209,7 +216,8 @@ class OpenAi(LlmBase):
                   prompt: str,
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
-                  llm_param: OpenAiParam = None
+                  llm_param: OpenAiParam = None,
+                  stop_words: list = None
                   ) -> LlmReturn:
         """
         异步的，得到对话上下文
@@ -217,6 +225,7 @@ class OpenAi(LlmBase):
         :param validate: 惩罚验证列表
         :param prompt: 提示词
         :param llm_param: 参数表
+        :param stop_words:
         :return:
         """
         _request_arg = {
@@ -224,7 +233,11 @@ class OpenAi(LlmBase):
             "n": 1
         }
         _request_arg: dict
-
+        if stop_words is None:
+            stop_words = [f"{self.profile.start_name}:",
+                          f"{self.profile.restart_name}:",
+                          f"{self.profile.start_name}：",
+                          f"{self.profile.restart_name}："]
         # Kwargs
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
@@ -234,10 +247,7 @@ class OpenAi(LlmBase):
                             prompt=str(prompt),
                             max_tokens=int(predict_tokens),
                             user=str(self.profile.get_conversation_hash()),
-                            stop=[f"{self.profile.start_name}:",
-                                  f"{self.profile.restart_name}:",
-                                  f"{self.profile.start_name}：",
-                                  f"{self.profile.restart_name}："],
+                            stop=stop_words,
                             )
 
         # Adjust Penalty

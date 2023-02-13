@@ -273,9 +273,12 @@ class SinglePoint(Point):
             _, _prompt_body = get_head_foot(prompt)
             _ask_diff = Sim.cosion_similarity(pre=_prompt_body, aft=ask)
             _ask_diff = _ask_diff * 100
-            score = _ask_diff if _ask_diff < 90 else 1
-            if score != 0:
-                memory[i]["content"]["weight"].append(score)
+            _edit_diff = Sim.edit_similarity(pre=_prompt_body, aft=ask)
+            if _edit_diff < 4:
+                score = _ask_diff * 0.2
+            else:
+                score = _ask_diff if _ask_diff < 90 else 1
+            memory[i]["content"]["weight"].append(score)
 
         # 主题检索
         _key = Utils.tfidf_keywords(prompt, topK=5)
@@ -289,8 +292,7 @@ class SinglePoint(Point):
                         score += 1
                 _get = (score / full_score) * 100
                 _get = _get if _get < 95 else 50
-                if _get != 0:
-                    memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
+                memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
 
         # 进行筛选，计算限制
         _msg_flow = []

@@ -9,6 +9,7 @@ from typing import List
 # 最小单元测试
 import src.llm_kira as llm_kira
 import setting
+from llm_kira.radio.anchor import SearchCraw, DuckgoCraw
 from src.llm_kira.client import Optimizer
 from src.llm_kira.client.llms.openai import OpenAiParam
 from src.llm_kira.client.types import PromptItem
@@ -63,8 +64,10 @@ llm = llm_kira.client.llms.OpenAi(
 mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                memory_manger=mem,
-                               optimizer=Optimizer.RelatePoint,
-                               llm_model=llm)
+                               skeleton=[DuckgoCraw(), SearchCraw()],
+                               optimizer=Optimizer.SinglePoint,
+                               llm_model=llm
+                               )
 
 
 async def chat():
@@ -79,7 +82,7 @@ async def chat():
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text='教我 Python 吧'))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text='孤独摇滚是什么'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
@@ -94,6 +97,7 @@ async def chat():
     print(f"raw:{response.llm.raw}")
     print(f"---{response.llm.time}---")
     promptManager.clean()
+    return "End"
     promptManager.insert(item=PromptItem(start=conversation.start_name, text='今天天气怎么样'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),

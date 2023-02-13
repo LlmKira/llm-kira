@@ -162,7 +162,9 @@ class RedisConfig(BaseModel):
     password: str = None
 
 
-def GetDataManager(redis_config: RedisConfig, filedb_path: str) -> Union[RedisWorker, ElaraWorker]:
+def GetDataManager(redis_config: RedisConfig,
+                   filedb_path: str,
+                   prefix: str = "llm_kira_memory_") -> Union[RedisWorker, ElaraWorker]:
     MsgFlowData = None
     if filedb:
         MsgFlowData = ElaraWorker(filepath=filedb_path)
@@ -173,13 +175,35 @@ def GetDataManager(redis_config: RedisConfig, filedb_path: str) -> Union[RedisWo
                 port=redis_config.port,
                 db=redis_config.db,
                 password=redis_config.password,
-                prefix="llm_kira_memory_")
+                prefix=prefix)
             MsgFlowData_.ping()
         except Exception as e:
             pass
         else:
             MsgFlowData = MsgFlowData_
     return MsgFlowData
+
+
+class Bucket(object):
+    def __init__(self, uid: int):
+        """
+        消息流存储器
+        :param uid: 独立 id ，是一个消息桶
+        """
+        self.uid = str(uid)
+        # 工具数据类型
+        self.MsgFlowData = GetDataManager(_redis_config, _db_file, prefix="llm_kira_cache_")
+
+    def get(self):
+        _get = self.MsgFlowData.getKey(self.uid)
+        if not _get:
+            _get = {}
+        return _get
+
+    def set(self, data):
+        if not data:
+            data = {}
+        return self.MsgFlowData.setKey(self.uid, data)
 
 
 class MsgFlow(object):

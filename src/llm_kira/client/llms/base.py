@@ -56,8 +56,8 @@ class LlmBase(ABC):
         return text[:token]
 
     @abstractmethod
-    def summary_context(self, history: str) -> str:
-        return history
+    def task_context(self, task: str, prompt: str, predict_tokens: int = 500) -> Any:
+        return None
 
     @abstractmethod
     def resize_context(self, head: list, body: list, foot: list = None, token: int = 0) -> str:
