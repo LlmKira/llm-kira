@@ -94,7 +94,7 @@ class DuckgoCraw(Antennae):
         self.deacon = deacon
 
     @retry(retry=retry_if_exception_type((LookupError)), stop=stop_after_attempt(3),
-           wait=wait_exponential(multiplier=1, min=1, max=10), reraise=True)
+           wait=wait_exponential(multiplier=1, min=1, max=5), reraise=True)
     async def run(self, prompt: str, prompt_raw: str = None) -> List[str]:
         if prompt_raw is None:
             prompt_raw = prompt

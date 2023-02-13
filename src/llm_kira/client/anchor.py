@@ -337,13 +337,11 @@ class ChatBot(object):
                                                              predict_tokens=30,
                                                              prompt=_search_raw)
                     _search = llm_result.reply[0]
-                t2 = time.time()
-                skeleton_result = await random.choice(self.skeleton).run(
+                _client = random.choice(self.skeleton)
+                skeleton_result = await _client.run(
                     prompt=_search,
                     prompt_raw=_search_raw
                 )
-                t1 = time.time()
-                print(t1 - t2)
             except Exception as e:
                 logger.warning(f"skeleton search:{e}")
             else:
