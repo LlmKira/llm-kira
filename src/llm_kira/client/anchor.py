@@ -3,7 +3,8 @@
 # @FileName: anchor.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from typing import Union, Callable, List
+import random
+from typing import Union, Callable, List, Optional
 
 from loguru import logger
 
@@ -15,7 +16,9 @@ from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
 from .types import LlmReturn
 from ..error import LLMException
-from ..utils.chat import Detect
+from ..radio.anchor import Antennae
+from ..radio.decomposer import Extract
+from ..utils.chat import Detect, Utils
 from ..utils.data import MsgFlow
 # 基于 Completion 上层
 from .types import PromptItem, MemoryItem, Memory_Flow, ChatBotReturn
@@ -48,9 +51,8 @@ class Preset(object):
         lang = lang.upper()
         if lang == "ZH":
             return [
-                "受过教育的",
-                "幽默地",
-                "有趣地"
+                "如果有引用，则附上引用",
+                "幽默地"
             ]
         elif lang == "EN":
             return [
@@ -211,6 +213,7 @@ class ChatBot(object):
                  profile: Conversation,
                  memory_manger: MemoryManager,
                  optimizer: Optimizer = Optimizer.SinglePoint,
+                 skeleton: List[Antennae] = None,
                  llm_model: LlmBase = None
                  ):
         """
@@ -218,6 +221,7 @@ class ChatBot(object):
         """
         self.profile = profile
         self.prompt = None
+        self.skeleton = skeleton
         self.memory_manger = memory_manger
         self.optimizer = optimizer
         if optimizer is None:
@@ -292,6 +296,7 @@ class ChatBot(object):
         _prompt_body = []
         _prompt_foot = []
         _prompt_foot.extend([f"{prompt_text}"])
+        _prompt_foot.append(f"\n{self.profile.restart_name}:")
         # Enhance
         if isinstance(increase, str):
             _appendix = increase
@@ -299,6 +304,7 @@ class ChatBot(object):
             _appendix = await increase.run()
         _prompt_head.append(template)
         _prompt_head.append(_appendix)
+
         # Cut Size
         _body_token = int(
             predict_tokens +
@@ -317,21 +323,44 @@ class ChatBot(object):
             tokenizer=self.llm.tokenizer,
         ).run()
         _prompt_body.extend(_prompt_optimized)
-
+        # Extract
+        if self.skeleton and 4 < len(prompt_index):
+            try:
+                _search_raw = prompt_index if len(prompt_index.split(":")) < 2 else prompt_index.split(":")[1]
+                _search = _search_raw
+                if len(_search_raw) > 30:
+                    llm_result = await self.llm.task_context(task="提取一个20字以内的关键问题",
+                                                             predict_tokens=30,
+                                                             prompt=_search_raw)
+                    logger.warning(llm_result.reply[0])
+                    _search = llm_result.reply[0]
+                skeleton_result = await random.choice(self.skeleton).run(
+                    prompt=_search,
+                    prompt_raw=_search_raw
+                )
+            except Exception as e:
+                logger.warning(f"skeleton搜索外骨骼:{e}")
+            else:
+                if skeleton_result:
+                    _prompt_body = list(reversed(_prompt_body))
+                    _prompt_body.extend(Extract.sumy_extract(url="", html="".join(skeleton_result)))
+                    _prompt_body = list(reversed(_prompt_body))
         # Resize
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
         if _llm_result_limit < 10:
-            logger.warning("llm predict token lower than 10.may limit too low or predict token too high")
+            logger.warning("llm free mem lower than 10...may limit too low or predict token too high")
         _prompt = self.llm.resize_context(head=_prompt_head,
                                           body=_prompt_body,
                                           foot=_prompt_foot,
-                                          token=_llm_result_limit)
+                                          token=_llm_result_limit)  # - self.llm.tokenizer("".join(_prompt_foot)))
+
+        # Connect
+        # _prompt = _prompt + "\n".join(_prompt_foot)
 
         # Stick Them
-        _prompt = _prompt + f"\n{self.profile.restart_name}:"
         if not prompt_iscode:
-            _prompt = _prompt.replace("\n\n", "\n")
+            _prompt = _prompt.replace("\n\n", "\n").replace("\n\n", "\n")
 
         # Get
         llm_result = await self.llm.run(prompt=_prompt,
@@ -344,6 +373,7 @@ class ChatBot(object):
         self.memory_manger.save_context(ask=prompt_text,
                                         reply=f"{self.profile.restart_name}:{self.llm.parse_reply(llm_result.reply)}",
                                         no_head=True)
+        # Return
         return ChatBotReturn(conversation_id=f"{self.profile.conversation_id}",
                              llm=llm_result,
                              ask=prompt_text,

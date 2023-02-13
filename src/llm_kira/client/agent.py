@@ -21,6 +21,7 @@ class Conversation(object):
     def __init__(self, start_name: str,
                  restart_name: str,
                  conversation_id: int = 1,
+                 init_usage: int = 0
                  ):
         """
         start_name: 说话者的名字
@@ -33,8 +34,18 @@ class Conversation(object):
         self.conversation_id = str(conversation_id)
         self.start_name = start_name.strip(":").strip("：")
         self.restart_name = restart_name.strip(":").strip("：")
+        self.__usage = init_usage if init_usage > 0 else 0
 
     def get_conversation_hash(self):
         uid = f"{str(self.hash_secret)}{str(self.conversation_id)}"
         hash_object = hashlib.sha256(uid.encode())
         return hash_object.hexdigest()
+
+    def get_round_usage(self):
+        return self.__usage
+
+    def update_usage(self, usage: int = 0, override: bool = False):
+        if override:
+            self.__usage = usage
+        else:
+            self.__usage += usage

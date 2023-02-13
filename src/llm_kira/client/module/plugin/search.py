@@ -18,7 +18,7 @@ info_cache = {}
 modulename = os.path.basename(__file__).strip(".py")
 
 
-@ChatPlugin.plugin_register(modulename)
+# @ChatPlugin.plugin_register(modulename)
 class Search(object):
     def __init__(self):
         self._server = None
