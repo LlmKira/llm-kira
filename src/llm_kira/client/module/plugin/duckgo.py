@@ -75,7 +75,7 @@ class Duckgo(object):
         return results
 
 
-@ChatPlugin.plugin_register(modulename)
+# @ChatPlugin.plugin_register(modulename)
 class DuckGo(object):
     def __init__(self):
         self._server = None

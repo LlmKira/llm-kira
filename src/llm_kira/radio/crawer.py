@@ -46,7 +46,7 @@ class UniMatch(object):
             "Sec-Fetch-Mode": "navigate",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0"
         }
-        html = await network.request("GET", url=_url, headers=headers, timeout=10)
+        html = await network.request("GET", url=_url, headers=headers, timeout=5)
         if html.status_code == 200:
             return html.text
         else:
@@ -63,7 +63,7 @@ class Duckgo(object):
         page_data = []
         payload["s"] = max(self.PAGINATION_STEP * (page - 1), 0)
         try:
-            resp = await network.request("POST", "https://links.duckduckgo.com/d.js", params=payload)
+            resp = await network.request("POST", "https://links.duckduckgo.com/d.js", params=payload, timeout=5)
             resp.raise_for_status()
             page_data = resp.json().get("results", None)
         except Exception as e:

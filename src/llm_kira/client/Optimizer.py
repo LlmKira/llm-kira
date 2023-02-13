@@ -155,7 +155,7 @@ class MatrixPoint(Point):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             _ask_diff = Sim.cosion_similarity(pre=prompt, aft=ask)
             _ask_diff = _ask_diff * 100
-            score = _ask_diff if _ask_diff < 90 else 1
+            score = _ask_diff if _ask_diff < 95 else 1
             if score != 0:
                 memory[i]["content"]["weight"].append(score)
 
@@ -262,13 +262,13 @@ class SinglePoint(Point):
             memory[i]["content"]["weight"] = [_forget]
 
         # 筛选标准发言
-        for i in range(0, len(memory) - attention):
+        for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             if len(ask) < 1 or len(reply) < 1:
                 memory[i]["content"]["weight"].append(-1000)
 
         # 相似度检索
-        for i in range(0, len(memory)):
+        for i in range(attention, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             _, _prompt_body = get_head_foot(prompt)
             _ask_diff = Sim.cosion_similarity(pre=_prompt_body, aft=ask)
