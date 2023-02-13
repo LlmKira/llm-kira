@@ -332,7 +332,6 @@ class ChatBot(object):
                     llm_result = await self.llm.task_context(task="提取一个20字以内的关键问题",
                                                              predict_tokens=30,
                                                              prompt=_search_raw)
-                    logger.warning(llm_result.reply[0])
                     _search = llm_result.reply[0]
                 skeleton_result = await random.choice(self.skeleton).run(
                     prompt=_search,
