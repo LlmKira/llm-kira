@@ -4,6 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import random
+import time
 from typing import Union, Callable, List, Optional
 
 from loguru import logger
@@ -16,8 +17,7 @@ from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
 from .types import LlmReturn
 from ..error import LLMException
-from ..radio.anchor import Antennae
-from ..radio.decomposer import Extract
+
 from ..utils.chat import Detect, Utils
 from ..utils.data import MsgFlow
 # 基于 Completion 上层
@@ -25,6 +25,10 @@ from .types import PromptItem, MemoryItem, Memory_Flow, ChatBotReturn
 from .Optimizer import convert_msgflow_to_list
 
 from .agent import Conversation
+
+from ..radio.anchor import Antennae
+from ..radio.decomposer import Extract, PromptTool
+from ..radio.setting import HELP_WORDS
 
 
 class Preset(object):
@@ -324,7 +328,7 @@ class ChatBot(object):
         ).run()
         _prompt_body.extend(_prompt_optimized)
         # Extract
-        if self.skeleton and 4 < len(prompt_index):
+        if self.skeleton and PromptTool.isStrIn(prompt=prompt_text, keywords=HELP_WORDS):
             try:
                 _search_raw = prompt_index if len(prompt_index.split(":")) < 2 else prompt_index.split(":")[1]
                 _search = _search_raw
@@ -333,17 +337,19 @@ class ChatBot(object):
                                                              predict_tokens=30,
                                                              prompt=_search_raw)
                     _search = llm_result.reply[0]
+                t2 = time.time()
                 skeleton_result = await random.choice(self.skeleton).run(
                     prompt=_search,
                     prompt_raw=_search_raw
                 )
+                t1 = time.time()
+                print(t1 - t2)
             except Exception as e:
-                logger.warning(f"skeleton搜索外骨骼:{e}")
+                logger.warning(f"skeleton search:{e}")
             else:
                 if skeleton_result:
-                    _prompt_body = list(reversed(_prompt_body))
-                    _prompt_body.extend(Extract.sumy_extract(url="", html="".join(skeleton_result)))
-                    _prompt_body = list(reversed(_prompt_body))
+                    print(skeleton_result)
+                    _prompt_head.append("".join(skeleton_result)[:250])
         # Resize
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1

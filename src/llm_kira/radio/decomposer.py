@@ -198,6 +198,14 @@ class PromptTool(object):
                                                                           '何が', '何に']
 
     @staticmethod
+    def isStrIn(prompt: str, keywords: list):
+        isIn = False
+        for i in keywords:
+            if i in prompt:
+                isIn = True
+        return isIn
+
+    @staticmethod
     def nlp_filter_list(prompt, material: list):
         if not material or not isinstance(material, list):
             return []

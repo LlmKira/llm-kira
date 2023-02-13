@@ -4,6 +4,8 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import asyncio
+import random
+import time
 from typing import List
 
 # 最小单元测试
@@ -18,6 +20,9 @@ print(llm_kira.RedisConfig())
 
 openaiApiKey = setting.ApiKey
 openaiApiKey: List[str]
+import openai as open
+
+open.api_key = random.choice(openaiApiKey)  # supply your API key however you choose
 
 
 def random_string(length):
@@ -26,6 +31,11 @@ def random_string(length):
     for i in range(length):
         string += chr(random.randint(97, 122))  # 生成小写字母
     return string
+
+
+async def create_completion():
+    completion_resp = await open.Completion.acreate(prompt="Say this is a test", model="text-davinci-003", )
+    print(completion_resp)
 
 
 async def completion():
@@ -82,11 +92,11 @@ async def chat():
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text='孤独摇滚是什么'))
+    promptManager.insert(item=PromptItem(start=conversation.start_name, text='2023年新番有哪些？'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
-        predict_tokens=500,
+        predict_tokens=1000,
         increase="外部增强:每句话后面都要带 “喵”",
     )
 
@@ -177,6 +187,8 @@ async def Web():
     print(h1)
 
 
+t1 = time.time()
+# asyncio.run(create_completion())
 # asyncio.run(completion())
 asyncio.run(chat())
 # asyncio.run(Moderation())
@@ -187,3 +199,6 @@ asyncio.run(chat())
 # asyncio.run(Web())
 # print(float(1))
 # print(int(1.2))
+t2 = time.time()
+
+print(t2 - t1)
