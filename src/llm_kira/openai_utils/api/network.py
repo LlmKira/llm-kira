@@ -23,7 +23,7 @@ from ...error import RateLimitError, ServiceUnavailableError, AuthenticationErro
 __session_pool = {}
 
 
-def error_handler(code, message: str):
+def openai_error_handler(code, message: str):
     message = str(message)
     if code == 429:
         raise RateLimitError(message)

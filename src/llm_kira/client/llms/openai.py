@@ -11,15 +11,16 @@ import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 # from loguru import logger
 import openai as openai_client
+from llm_kira.error import LLMException
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_fixed, wait_exponential
 from ..agent import Conversation
 from ..llms.base import LlmBase, LlmBaseParam
 from ..types import LlmReturn
+from ...openai_utils.api.network import openai_error_handler
 from ...utils.chat import Detect
 from ...utils.data import DataUtils
 from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
-from ...error import RateLimitError, ServiceUnavailableError, AuthenticationError
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -290,16 +291,14 @@ class OpenAi(LlmBase):
         openai_client.api_key = self.__api_key
         # 继承重写
         try:
-            try:
-                response = await openai_client.Completion.acreate(**_request_arg)
-            except Exception as e:
-                if self.__call_func:
-                    self.__call_func(str(e), self.__api_key)
-                raise e
-        except openai_client.error.RateLimitError as e:
-            raise RateLimitError(e)
-        except openai_client.error.ServiceUnavailableError as e:
-            raise ServiceUnavailableError(e)
+            response = await openai_client.Completion.acreate(**_request_arg)
+        except openai_client.error.OpenAIError as e:
+            if self.__call_func:
+                self.__call_func(e.json_body, self.__api_key)
+            openai_error_handler(e.code, e.error)
+            raise
+        except Exception as e:
+            raise LLMException(e)
         # 自维护 Api 库
         """
         response = await Completion(api_key=self.__api_key, call_func=self.__call_func).create(
