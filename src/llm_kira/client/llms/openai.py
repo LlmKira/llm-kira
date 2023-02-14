@@ -84,7 +84,7 @@ class OpenAi(LlmBase):
                  api_key: Union[str, list] = None,
                  token_limit: int = 3700,
                  auto_penalty: bool = False,
-                 call_func: Callable[[str, str], Any] = None,
+                 call_func: Callable[[dict, str], Any] = None,
                  ):
         """
         chatGPT 的实现由上下文实现，所以我会做一个存储器来获得上下文
