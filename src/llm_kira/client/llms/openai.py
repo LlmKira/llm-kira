@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 1/23/23 7:00 PM
-# @FileName: openai.py
+# @FileName: openai_utils.py
 # @Software: PyCharm
 # @Github    ：sudoskys
 import os
@@ -10,17 +10,16 @@ import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 # from loguru import logger
+import openai as openai_client
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_fixed, wait_exponential
 from ..agent import Conversation
 from ..llms.base import LlmBase, LlmBaseParam
 from ..types import LlmReturn
-from ...openai import Completion
 from ...utils.chat import Detect
 from ...utils.data import DataUtils
-#
 from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
-from ...openai.api.network import RateLimitError, ServiceUnavailableError
+from ...error import RateLimitError, ServiceUnavailableError, AuthenticationError
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -84,7 +83,7 @@ class OpenAi(LlmBase):
                  api_key: Union[str, list] = None,
                  token_limit: int = 3700,
                  auto_penalty: bool = False,
-                 call_func: Callable[[dict, str], Any] = None,
+                 call_func: Callable[[str, str], Any] = None,
                  ):
         """
         chatGPT 的实现由上下文实现，所以我会做一个存储器来获得上下文
@@ -208,7 +207,8 @@ class OpenAi(LlmBase):
         else:
             return 4000
 
-    @retry(retry=retry_if_exception_type((RateLimitError, ServiceUnavailableError)),
+    @retry(retry=retry_if_exception_type((openai_client.error.RateLimitError,
+                                          openai_client.error.ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
            wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
            reraise=True)
@@ -287,9 +287,25 @@ class OpenAi(LlmBase):
             _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
 
         # 请求
+        openai_client.api_key = self.__api_key
+        # 继承重写
+        try:
+            try:
+                response = await openai_client.Completion.acreate(**_request_arg)
+            except Exception as e:
+                if self.__call_func:
+                    self.__call_func(str(e), self.__api_key)
+                raise e
+        except openai_client.error.RateLimitError as e:
+            raise RateLimitError(e)
+        except openai_client.error.ServiceUnavailableError as e:
+            raise ServiceUnavailableError(e)
+        # 自维护 Api 库
+        """
         response = await Completion(api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg
         )
+        """
         reply = self.parse_response(response)
         self.profile.update_usage(usage=self.parse_usage(response))
         return LlmReturn(model_flag=llm_param.model_name,

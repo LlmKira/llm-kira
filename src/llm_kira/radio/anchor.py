@@ -108,7 +108,7 @@ class DuckgoCraw(Antennae):
         _results = await Duckgo().get_result(keywords=prompt)
         if not _results:
             return []
-        _content = [f"{i['title']}{i['body']}{i['href']}" for i in _results]
+        _content = [f"{i['title']}-{i['body']}\n{i['href']}" for i in _results]
         _link = [f"{i['href']}" for i in _results]
         for item in _link[:3]:
             _content.extend(await raw_content(url=item, query=prompt))

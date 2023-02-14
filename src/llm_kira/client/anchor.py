@@ -55,19 +55,21 @@ class Preset(object):
         lang = lang.upper()
         if lang == "ZH":
             return [
-                "如果有引用，则附上引用",
                 "幽默地"
             ]
         elif lang == "EN":
             return [
-                "educated",
                 "helpful",
             ]
         elif lang == "JA":
-            return ["教育された", "ユーモラスに", "興味深い"]
+            return ["教育された",
+                    "ユーモラスに",
+                    "興味深い"
+                    ]
         else:
             return [
-                "helpful", "Interesting",
+                "helpful",
+                "Interesting",
             ]
 
     def role(self, role: str = "",
@@ -221,7 +223,7 @@ class ChatBot(object):
                  llm_model: LlmBase = None
                  ):
         """
-        类型类型，所需的依赖元素
+        skeleton: 外骨骼，用于生成模拟信息
         """
         self.profile = profile
         self.prompt = None
@@ -327,13 +329,14 @@ class ChatBot(object):
             tokenizer=self.llm.tokenizer,
         ).run()
         _prompt_body.extend(_prompt_optimized)
-        # Extract
+
+        # 检查外骨骼注入和基本的通过检查
         if self.skeleton and PromptTool.isStrIn(prompt=prompt_text, keywords=HELP_WORDS):
             try:
                 _search_raw = prompt_index if len(prompt_index.split(":")) < 2 else prompt_index.split(":")[1]
                 _search = _search_raw
                 if len(_search_raw) > 30:
-                    llm_result = await self.llm.task_context(task="提取一个20字以内的关键问题",
+                    llm_result = await self.llm.task_context(task="20字以内-提取关键问题",
                                                              predict_tokens=30,
                                                              prompt=_search_raw)
                     _search = llm_result.reply[0]
@@ -343,11 +346,11 @@ class ChatBot(object):
                     prompt_raw=_search_raw
                 )
             except Exception as e:
-                logger.warning(f"skeleton search:{e}")
+                logger.warning(f"Skeleton Outline:{e}")
             else:
                 if skeleton_result:
-                    print(skeleton_result)
-                    _prompt_head.append("".join(skeleton_result)[:250])
+                    _prompt_head.append("\n".join(skeleton_result)[:270])
+
         # Resize
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1

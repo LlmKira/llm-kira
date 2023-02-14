@@ -74,7 +74,7 @@ llm = llm_kira.client.llms.OpenAi(
 mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                memory_manger=mem,
-                               skeleton=[DuckgoCraw(), SearchCraw()],
+                               skeleton=[SearchCraw()],
                                optimizer=Optimizer.SinglePoint,
                                llm_model=llm
                                )
