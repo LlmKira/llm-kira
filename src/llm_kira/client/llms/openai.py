@@ -3,7 +3,7 @@
 # @FileName: openai_utils.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-
+import math
 import time
 import random
 import tiktoken
@@ -152,9 +152,25 @@ class OpenAi(LlmBase):
         return _reply
 
     def resize_sentence(self, text: str, token: int) -> str:
+        """
+        改进后的梯度缓存裁剪算法
+        """
         token = token if token > 0 else 0
-        while len(text) > 4 and self.tokenizer(text) > token:
-            text = text[4:]
+        step = 4
+        _cache = {}
+
+        def _cache_cutter(_text):
+            if _cache.get(_text):
+                return _cache.get(_text)
+            _value = self.tokenizer(_text)
+            _cache[_text] = _value
+            return _value
+
+        while len(text) > step and _cache_cutter(text) > token:
+            _rank = math.floor((_cache_cutter(text) - token) / 100) + 4
+            step = _rank * 8
+            text = text[step:]
+        _cache = {}
         return text
 
     async def task_context(self, task: str, prompt: str, predict_tokens: int = 500) -> LlmReturn:
@@ -255,6 +271,7 @@ class OpenAi(LlmBase):
         if anonymous_user:
             _request_arg.pop("user", None)
         # Adjust Penalty
+        """
         if self.auto_penalty and validate:
             # Cook
             _frequency_penalty, _presence_penalty, _temperature = Detect().gpt_tendency_arg(prompt=prompt,
@@ -267,7 +284,7 @@ class OpenAi(LlmBase):
                 "presence_penalty": float(_presence_penalty),
                 "temperature": float(_temperature),
             })
-
+        """
         if _request_arg.get("frequency_penalty") == 0:
             _request_arg.pop("frequency_penalty", None)
         if _request_arg.get("presence_penalty") == 0:

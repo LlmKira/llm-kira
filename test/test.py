@@ -40,7 +40,7 @@ async def create_completion():
 
 async def completion():
     try:
-        response = await llm_kira.openai.Completion(api_key=openaiApiKey, proxy_url="").create(
+        response = await llm_kira.openai_utils.Completion(api_key=openaiApiKey, proxy_url="").create(
             model="text-davinci-003",
             prompt="Say this is a test",
             temperature=0,
@@ -86,15 +86,16 @@ async def chat():
                                            template=None
                                            )
     # 大型数据对抗测试
-    # promptManager.insert(item=PromptItem(start="Neko", text=random_string(4000)))
+    promptManager.insert(item=PromptItem(start="Neko", text=random_string(8000)))
     # promptManager.insert(item=PromptItem(start="Neko", text=random_string(500)))
 
     # 多 prompt 对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text='2023年新番有哪些？'))
+    # 测试
+    # promptManager.insert(item=PromptItem(start=conversation.start_name, text='2023年新番有哪些？'))
     response = await chat_client.predict(
-        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
+        llm_param=OpenAiParam(model_name="text-davinci-002-render-paid", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
         predict_tokens=1000,
         increase="外部增强:每句话后面都要带 “喵”",
