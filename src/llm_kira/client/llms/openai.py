@@ -3,9 +3,8 @@
 # @FileName: openai_utils.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-import os
+
 import time
-import json
 import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
@@ -218,7 +217,8 @@ class OpenAi(LlmBase):
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: OpenAiParam = None,
-                  stop_words: list = None
+                  stop_words: list = None,
+                  anonymous_user: bool = True,
                   ) -> LlmReturn:
         """
         异步的，得到对话上下文
@@ -226,6 +226,7 @@ class OpenAi(LlmBase):
         :param validate: 惩罚验证列表
         :param prompt: 提示词
         :param llm_param: 参数表
+        :param anonymous_user:
         :param stop_words:
         :return:
         """
@@ -250,7 +251,9 @@ class OpenAi(LlmBase):
                             user=str(self.profile.get_conversation_hash()),
                             stop=stop_words,
                             )
-
+        # Anonymous
+        if anonymous_user:
+            _request_arg.pop("user", None)
         # Adjust Penalty
         if self.auto_penalty and validate:
             # Cook
@@ -264,11 +267,14 @@ class OpenAi(LlmBase):
                 "presence_penalty": float(_presence_penalty),
                 "temperature": float(_temperature),
             })
+        else:
+            _request_arg.pop("frequency_penalty", None)
+            _request_arg.pop("presence_penalty", None)
 
         # 校准字节参数
         if not _request_arg.get("logit_bias"):
             _request_arg["logit_bias"] = {}
-            _request_arg.pop("logit_bias")
+            _request_arg.pop("logit_bias", None)
 
         # 校准温度和惩罚参数
         if _request_arg.get("frequency_penalty"):

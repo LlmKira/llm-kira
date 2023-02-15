@@ -170,7 +170,7 @@ class PromptManager(object):
             item: PromptItem
             if item.start:
                 start = f"{item.start}:"
-            _result.append(f"{start}{item.text}")
+            _result.append(f"{start} {item.text}")
         if raw_list:
             return _result
         return self.__connect_words.join(_result)
