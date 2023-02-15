@@ -44,7 +44,7 @@ class ChatPlugin(object):
                     # Log
                     logger.debug(f"{plugin_name}:{text}")
             except Exception as e:
-                logger.error(f"Plugin:{plugin_name} --Error:{e}")
+                logger.warning(f"Plugin:{plugin_name} --Error:{e}")
         return _return
 
     @classmethod

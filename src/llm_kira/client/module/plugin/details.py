@@ -5,7 +5,7 @@
 # @Github    ：sudoskys
 
 from ..platform import ChatPlugin, PluginConfig
-from ._plugin_tool import PromptTool
+from ..nlp_tool import PromptTool
 import os
 from loguru import logger
 
