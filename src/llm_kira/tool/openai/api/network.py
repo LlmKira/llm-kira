@@ -3,14 +3,6 @@
 # @FileName: network.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-# -*- coding: utf-8 -*-
-# @Time    : 12/5/22 9:58 PM
-# @FileName: network.py
-# @Software: PyCharm
-# @Github    ：sudoskys
-"""
-参考 bilibili_api.utils.network_httpx 制造的工具类
-"""
 
 from typing import Any
 import json
@@ -18,7 +10,7 @@ import asyncio
 import atexit
 import httpx
 
-from ...error import RateLimitError, ServiceUnavailableError, AuthenticationError
+from ....error import RateLimitError, ServiceUnavailableError, AuthenticationError
 
 __session_pool = {}
 
@@ -104,12 +96,20 @@ async def request(
     raw_data = resp.text
     req_data: dict
     req_data = json.loads(raw_data)
-    _error = req_data.get("error")
-    if _error:
+
+    # Error
+    if req_data.get("error"):
         # if ERROR.get('type') == "insufficient_quota":
         if call_func:
-            call_func(req_data, auth)
-        error_handler(code=resp.status_code, message=f"{resp.status_code}:{_error.get('type')}:{_error.get('message')}")
+            call_func(
+                req_data,
+                auth
+            )
+        _error = req_data.get("error")
+        openai_error_handler(
+            code=resp.status_code,
+            message=f"{resp.status_code}:{_error.get('type')}:{_error.get('message')}"
+        )
     return req_data
 
 

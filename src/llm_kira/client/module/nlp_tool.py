@@ -6,9 +6,9 @@
 import tiktoken
 from loguru import logger
 
-from ....utils import setting
-from ....utils import network
-from ....utils.chat import Utils, Sim
+from llm_kira.utils import setting
+from llm_kira.utils import network
+from llm_kira.utils.chat import Utils, Sim
 
 gpt_tokenizer = tiktoken.get_encoding("gpt2")
 

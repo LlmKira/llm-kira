@@ -265,7 +265,7 @@ class SinglePoint(Point):
         for i in range(0, len(memory)):
             ask, reply = MsgFlow.get_content(memory[i], sign=False)
             if len(ask) < 1 or len(reply) < 1:
-                memory[i]["content"]["weight"].append(-1000)
+                memory[i]["content"]["weight"].append(-250)
 
         # 相似度检索
         for i in range(attention, len(memory)):
@@ -292,7 +292,8 @@ class SinglePoint(Point):
                         score += 1
                 _get = (score / full_score) * 100
                 _get = _get if _get < 95 else 50
-                memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
+                if _get != 0:
+                    memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
 
         # 进行筛选，计算限制
         _msg_flow = []

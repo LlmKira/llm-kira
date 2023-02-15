@@ -5,9 +5,9 @@
 # @Github    ：sudoskys
 import random
 from typing import Union
-from ...openai_utils.api.api_utils import load_api
-from ...openai_utils.api.network import request
-from ...utils import setting
+from ...openai.api.api_utils import load_api
+from ...openai.api.network import request
+from llm_kira.utils import setting
 
 API = load_api()
 
