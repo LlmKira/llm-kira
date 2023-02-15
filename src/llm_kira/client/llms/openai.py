@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 1/23/23 7:00 PM
-# @FileName: openai_utils.py
+# @FileName: openai.py
 # @Software: PyCharm
 # @Github    ：sudoskys
 import math
@@ -9,15 +9,14 @@ import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 # from loguru import logger
-import openai as openai_client
-from llm_kira.error import LLMException
+
+from ...error import RateLimitError, ServiceUnavailableError
+from ...tool import openai as openai_api
 from pydantic import BaseModel, Field
-from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_fixed, wait_exponential
+from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
 from ..llms.base import LlmBase, LlmBaseParam
 from ..types import LlmReturn
-from ...openai_utils.api.network import openai_error_handler
-from ...utils.chat import Detect
 from ...utils.data import DataUtils
 from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
 
@@ -223,8 +222,8 @@ class OpenAi(LlmBase):
         else:
             return 4000
 
-    @retry(retry=retry_if_exception_type((openai_client.error.RateLimitError,
-                                          openai_client.error.ServiceUnavailableError)),
+    @retry(retry=retry_if_exception_type((RateLimitError,
+                                          ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
            wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
            reraise=True)
@@ -312,24 +311,24 @@ class OpenAi(LlmBase):
             _temperature = _request_arg["temperature"]
             _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
 
-        # 请求
-        openai_client.api_key = self.__api_key
         # 继承重写
-        try:
-            response = await openai_client.Completion.acreate(**_request_arg)
-        except openai_client.error.OpenAIError as e:
-            if self.__call_func:
-                self.__call_func(e.json_body, self.__api_key)
-            openai_error_handler(e.code, e.error)
-            raise
-        except Exception as e:
-            raise LLMException(e)
+        # openai_client.api_key = self.__api_key
+        # try:
+        #     response = await openai_client.Completion.acreate(**_request_arg)
+        # except openai_client.error.OpenAIError as e:
+        #     if self.__call_func:
+        #         self.__call_func(e.json_body, self.__api_key)
+        #     openai_error_handler(e.code, e.error)
+        #     raise
+        # except Exception as e:
+        #     raise LLMException(e)
+
         # 自维护 Api 库
-        """
-        response = await Completion(api_key=self.__api_key, call_func=self.__call_func).create(
+        response = await openai_api.Completion(api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg
         )
-        """
+
+        # Reply
         reply = self.parse_response(response)
         self.profile.update_usage(usage=self.parse_usage(response))
         return LlmReturn(model_flag=llm_param.model_name,
