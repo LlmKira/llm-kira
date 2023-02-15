@@ -267,8 +267,10 @@ class OpenAi(LlmBase):
                 "presence_penalty": float(_presence_penalty),
                 "temperature": float(_temperature),
             })
-        else:
+
+        if _request_arg.get("frequency_penalty") == 0:
             _request_arg.pop("frequency_penalty", None)
+        if _request_arg.get("presence_penalty") == 0:
             _request_arg.pop("presence_penalty", None)
 
         # 校准字节参数
