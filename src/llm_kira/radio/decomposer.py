@@ -127,6 +127,7 @@ class Extract(object):
         import trafilatura
         return Extract.chinese_sentence_cut(trafilatura.extract(downloaded))
 
+    """
     @staticmethod
     def sumy_extract(url, html) -> List[str]:
         _return_raw = []
@@ -144,6 +145,7 @@ class Extract(object):
         for sentence in summarizer(parser.document, SENTENCES_COUNT):
             _return_raw.append(str(sentence))
         return _return_raw
+    """
 
     @staticmethod
     def inscriptis_extract(html) -> Optional[str]:
@@ -162,7 +164,8 @@ class Extract(object):
         _return_raw = self.trafilatura_extract(html)
         if not _raw_text:
             return []
-        _summary = self.sumy_extract(url=url, html=_raw_text)
+        _summary = Utils.textrank_summarization(sentence=_raw_text, ratio=0.5)
+        # _summary = self.sumy_extract(url=url, html=_raw_text)
         _return_raw.extend(_summary)
         return _return_raw
 
@@ -192,10 +195,19 @@ class PromptTool(object):
                 "怎么",
                 "需要什么",
                 "注意什么",
-                "怎么办"] + ['怎麼做', '如何做', '幫我', '幫助我', '請給我', '給出建議', '給建議', '給我建議',
-                             '給我一些', '請教', '建議', '步驟', '怎樣', '如何', '怎麼樣', '為什麼', '幫朋友',
-                             '怎麼', '需要什麼', '註意什麼', '怎麼辦'] + ['助け', '何を', 'なぜ', '教えて', '提案',
-                                                                          '何が', '何に']
+                "怎么办"] + ['怎麼做',
+                             '如何做', '幫我', '幫助我',
+                             '請給我', '給出建議', '給建議',
+                             '給我建議', '給我一些', '請教', '建議',
+                             '步驟', '怎樣', '如何', '怎麼樣', '為什麼',
+                             '幫朋友', '怎麼', '需要什麼', '註意什麼',
+                             '怎麼辦'] + ['助け',
+                                          '何を',
+                                          'なぜ',
+                                          '教えて',
+                                          '提案',
+                                          '何が',
+                                          '何に']
 
     @staticmethod
     def isStrIn(prompt: str, keywords: list):
