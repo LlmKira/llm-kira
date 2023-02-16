@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llm_kira"
-version = "0.4.9"
+version = "0.5.0"
 description = "chatbot client for llm"
 authors = ["sudoskys <coldlando@hotmail.com>"]
 maintainers = [
@@ -33,9 +33,7 @@ similarities = "^1.0.4"
 aiohttp = "^3.8.3"
 goose3 = "^3.1.12"
 inscriptis = "^2.3.2"
-sumy = "^0.11.0"
 openai = "^0.26.5"
-
 
 [build-system]
 requires = ["poetry-core"]
