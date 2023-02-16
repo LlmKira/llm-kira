@@ -349,7 +349,10 @@ class ChatBot(object):
                 logger.warning(f"Skeleton Outline:{e}")
             else:
                 if skeleton_result:
+                    _prompt_head = list(reversed(_prompt_head))
+                    # 添加到首部
                     _prompt_head.append("\n".join(skeleton_result)[:250])
+                    _prompt_head = list(reversed(_prompt_head))
 
         # Resize
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
