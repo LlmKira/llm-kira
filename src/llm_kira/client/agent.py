@@ -4,7 +4,11 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import hashlib
+from typing import List
 from loguru import logger
+
+from .types import Interaction
+from ..utils.data import MsgFlow
 
 
 def getStrId(string):
@@ -26,6 +30,8 @@ class Conversation(object):
         """
         start_name: 说话者的名字
         restart_name: 回答时候使用的名字
+        conversation_id: 对话 ID，很重要，如果不存在会计算 start_name 的 唯一ID 作为 ID
+        init_usage: int 初始计费
         """
         self.hash_secret = "LLM"
         if not conversation_id:
@@ -49,3 +55,24 @@ class Conversation(object):
             self.__usage = usage
         else:
             self.__usage += usage
+
+
+class MemoryManager(object):
+    def __init__(self,
+                 profile: Conversation,
+                 ):
+        """
+        记忆管理器
+        """
+        self.profile = profile
+        self._DataManager = MsgFlow(uid=self.profile.conversation_id)
+
+    def reset_chat(self):
+        return self._DataManager.forget()
+
+    def read_context(self) -> List[Interaction]:
+        return self._DataManager.read()
+
+    def save_context(self, message: List[Interaction], override: bool = True):
+        self._DataManager.save(interaction_flow=message, override=override)
+        return message

@@ -4,15 +4,69 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import time
+import uuid
 from typing import Optional
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, validator, root_validator
 
 
-class MemeryItem(BaseModel):
-    ask: str
-    reply: str
-    weight: list = []
+class PromptItem(BaseModel):
+    id: str = str(uuid.uuid4())
+    start: str = ""
+    text: str
+    connect_words: str = ":"
+
+    @property
+    def prompt(self):
+        return f"{self.start}{self.connect_words}{self.text}"
+
+    @root_validator
+    def start_check(cls, values):
+        start, connect_words = values.get('start'), values.get('connect_words')
+        if len(start) > 50:
+            raise ValueError('start name too long')
+        if not start:
+            values["start"] = "*"
+        if connect_words:
+            values["start"] = start.strip().rstrip(connect_words)
+        return values
+
+    @validator('text')
+    def name_check(cls, v):
+        if not v:
+            return "None"
+        return v
+
+
+class Interaction(BaseModel):
+    single: bool = False  # 是否单条标示
+    ask: PromptItem
+    reply: Optional[PromptItem]
+    time: int = int(time.time() * 1000)
+
+    @property
+    def content(self):
+        if self.single:
+            return [self.ask.prompt]
+        else:
+            return [self.ask.prompt, self.reply.prompt]
+
+    @property
+    def raw(self):
+        return "\n".join(self.content)
+
+
+class InteractionWeight(BaseModel):
+    interaction: Interaction
+    weight: List[int] = []
+
+    @property
+    def score(self):
+        return sum(self.weight) / (len(self.weight) * 100 + 0.1)
+
+    @property
+    def sum(self):
+        return sum(self.weight)
 
 
 class LlmReturn(BaseModel):
@@ -29,22 +83,3 @@ class ChatBotReturn(BaseModel):
     llm: LlmReturn
     ask: str
     reply: str
-
-
-class PromptItem(BaseModel):
-    types: str = ""
-    start: str
-    text: str
-    method: str = ""
-
-
-class MemoryItem(BaseModel):
-    weight: list = []
-    ask: str = ""
-    reply: str = ""
-
-
-# {"weight": [], "ask": f"{ask}", "reply": f"{reply}"}
-class Memory_Flow(BaseModel):
-    content: MemoryItem
-    time: int = int(time.time() * 1000)

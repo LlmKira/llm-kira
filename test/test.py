@@ -11,18 +11,16 @@ from typing import List
 # 最小单元测试
 import src.llm_kira as llm_kira
 import setting
-from llm_kira.radio.anchor import SearchCraw, DuckgoCraw
 from src.llm_kira.client import Optimizer
 from src.llm_kira.client.llms.openai import OpenAiParam
 from src.llm_kira.client.types import PromptItem
 
-print(llm_kira.RedisConfig())
-
 openaiApiKey = setting.ApiKey
 openaiApiKey: List[str]
-import openai as open
+print(llm_kira.RedisConfig())
 
-open.api_key = random.choice(openaiApiKey)  # supply your API key however you choose
+import openai as open_clinet
+open_clinet.api_key = random.choice(openaiApiKey)  # supply your API key however you choose
 
 
 def random_string(length):
@@ -33,14 +31,9 @@ def random_string(length):
     return string
 
 
-async def create_completion():
-    completion_resp = await open.Completion.acreate(prompt="Say this is a test", model="text-davinci-003", )
-    print(completion_resp)
-
-
 async def completion():
     try:
-        response = await llm_kira.openai_utils.Completion(api_key=openaiApiKey, proxy_url="").create(
+        response = await llm_kira.openai.Completion(api_key=openaiApiKey, proxy_url="").create(
             model="text-davinci-003",
             prompt="Say this is a test",
             temperature=0,
@@ -60,7 +53,7 @@ receiver = llm_kira.client
 conversation = receiver.Conversation(
     start_name="Human:",
     restart_name="AI:",
-    conversation_id=12093,  # random.randint(1, 10000000),
+    conversation_id=12094,  # random.randint(1, 10000000),
 )
 
 llm = llm_kira.client.llms.OpenAi(
@@ -73,18 +66,20 @@ llm = llm_kira.client.llms.OpenAi(
 
 mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
-                               memory_manger=mem,
-                               skeleton=[SearchCraw()],
-                               optimizer=Optimizer.SinglePoint,
                                llm_model=llm
                                )
 
 
 async def chat():
-    promptManager = receiver.PromptManager(profile=conversation,
-                                           connect_words="\n",
-                                           template=None
-                                           )
+    promptManager = llm_kira.creator.PromptEngine(profile=conversation,
+                                                  connect_words="\n",
+                                                  memory_manger=mem,
+                                                  llm_model=llm,
+                                                  description="这是一段对话",
+                                                  reference_ratio=0.5,
+                                                  forget_words=["忘掉对话"],
+                                                  optimizer=Optimizer.SinglePoint,
+                                                  )
     # 大型数据对抗测试
     # promptManager.insert(item=PromptItem(start="Neko", text=random_string(8000)))
     # promptManager.insert(item=PromptItem(start="Neko", text=random_string(500)))
@@ -93,28 +88,25 @@ async def chat():
     # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
 
     # 测试
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text='2023年新番有哪些？'))
+    promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
     response = await chat_client.predict(
-        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         prompt=promptManager,
+        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
         predict_tokens=1000,
-        increase="外部增强:每句话后面都要带 “喵”",
     )
-
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
     print(f"usage:{response.llm.usage}")
     print(f"raw:{response.llm.raw}")
     print(f"---{response.llm.time}---")
-    promptManager.clean()
+    promptManager.clean(clean_prompt=True, clean_knowledge=False, clean_memory=False)
     return "End"
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text='今天天气怎么样'))
+    promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text='今天天气怎么样'))
     response = await chat_client.predict(
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=2, best_of=2),
         prompt=promptManager,
         predict_tokens=500,
-        increase="外部增强:每句话后面都要带 “喵”",
         # parse_reply=None
     )
     _info = "parse_reply 回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。",
@@ -178,18 +170,7 @@ async def GPT2():
         print(response)
 
 
-async def Web():
-    config = receiver.enhance.PluginConfig(server=["https://www.google.com/search?q={}"],
-                                           text="任何邪恶，终将？")
-    h0 = await receiver.enhance.WebSearch(
-        config=config).run()
-    h1 = await receiver.enhance.PluginSystem(plugin_table={"time": ""}, prompt="what time now?").run()
-    print(h0)
-    print(h1)
-
-
 t1 = time.time()
-# asyncio.run(create_completion())
 # asyncio.run(completion())
 asyncio.run(chat())
 # asyncio.run(Moderation())
@@ -197,7 +178,6 @@ asyncio.run(chat())
 # asyncio.run(KeyParse())
 # asyncio.run(GPT2())
 # asyncio.run(Sim())
-# asyncio.run(Web())
 # print(float(1))
 # print(int(1.2))
 t2 = time.time()
