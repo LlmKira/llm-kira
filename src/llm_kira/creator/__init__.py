@@ -3,4 +3,5 @@
 # @FileName: __init__.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from .engine import PromptEngine
+from .engine import PromptEngine, Preset
+from .think import Hook, ThinkEngine, HookPool
