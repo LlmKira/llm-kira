@@ -126,18 +126,17 @@ class SinglePoint(Point):
         _weight = _weight if _weight > 12 else 12
         return _weight
 
-    def _filler(self, _message: List[InteractionWeight], token: int):
+    def _filler(self, _message: List[InteractionWeight], token: int) -> List[Interaction]:
         __now = 0
         __returner = []
         for __item in _message:
             if __item.score > 0.5 and __now < token:
                 __now += self.tokenizer(__item.interaction.raw)
-                __returner.extend(__item.interaction.content)
-        # IMPORTANT
+                __returner.append(__item.interaction)
         __returner = list(reversed(__returner))
         return __returner
 
-    def run(self) -> List[str]:
+    def run(self) -> List[Interaction]:
         # 单条消息的内容 {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]}
         prompt = self.prompt
         interaction = build_weight(self.interaction)
@@ -145,10 +144,11 @@ class SinglePoint(Point):
         _knowledge_token_limit = int(self.token_limit * self.reference_ratio)
         _interaction_token_limit = self.token_limit - _knowledge_token_limit
 
+        _returner = [Interaction(single=True, ask=PromptItem(start="*", text=self.desc))]
+
         # Desc
         if self.tokenizer(self.desc) > self.token_limit:
-            return [self.desc]
-        _returner = [self.desc]
+            return _returner
 
         # knowledge 相似度检索
         for item in knowledge:

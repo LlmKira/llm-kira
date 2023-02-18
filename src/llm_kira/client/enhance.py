@@ -3,7 +3,11 @@
 # @FileName: enhance.py
 # @Software: PyCharm
 # @Github    ：sudoskys
+from typing import List
+
 from loguru import logger
+
+from ..client.types import Interaction, PromptItem
 
 
 class Support(object):
@@ -17,17 +21,17 @@ class PluginSystem(Support):
         self.table = plugin_table
         self.prompt = prompt
 
-    async def run(self) -> str:
-        _append = "-"
+    async def run(self) -> List[Interaction]:
         _return = []
         if not all([self.table, self.prompt]):
-            return _append
+            return []
         from .module.platform import ChatPlugin, PluginParam
         processor = ChatPlugin()
         for plugin in self.table.keys():
             processed = await processor.process(param=PluginParam(text=self.prompt, server=self.table),
                                                 plugins=[plugin])
-            _return.extend(processed)
-        reply = "\n".join(_return) if _return else ""
-        logger.debug(f"AllPluginReturn:{reply}")
-        return reply
+            if processed:
+                reply = "\n".join(processed)
+                _return.append(Interaction(single=True, ask=PromptItem(start=plugin, text=reply)))
+        logger.debug(f"AllPluginReturn:{_return}")
+        return _return

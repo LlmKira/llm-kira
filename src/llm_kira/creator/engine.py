@@ -31,6 +31,7 @@ class PromptEngine(object):
                  reference_ratio: float = 0.5,
                  forget_words: List[str] = None,
                  optimizer: Optimizer = Optimizer.SinglePoint,
+                 reverse_prompt_buffer: bool = False
                  ):
         """
         :param profile: 身份类型，同时承担计费管理
@@ -47,6 +48,7 @@ class PromptEngine(object):
         self.memory_manger = memory_manger
         self.reference_ratio = reference_ratio
         self.optimizer = optimizer
+        self.reverse_prompt_buffer = reverse_prompt_buffer
         self.forget_words = forget_words if forget_words else []
         # self.skeleton = skeleton
         self.__connect_words: str = connect_words
@@ -84,9 +86,13 @@ class PromptEngine(object):
             return None
 
     def _build_prompt_buffer(self):
-        _index = self.prompt_buffer.pop(-1)
-        for item in list(reversed(self.prompt_buffer)):
-            self.insert_interaction(ask=item, single=True)
+        _buffer = self.prompt_buffer
+        if self.reverse_prompt_buffer:
+            _buffer = list(reversed(_buffer))
+        _index = _buffer.pop(-1)
+        for item in _buffer:
+            self.build_interaction(ask=item, single=True)
+        self.clean(clean_prompt=True)
         return _index
 
     def read_interaction(self):
@@ -104,20 +110,27 @@ class PromptEngine(object):
             self.prompt_buffer = []
         return True
 
-    def insert_interaction(self, ask: PromptItem, response: Optimizer = None, single: bool = False):
+    def insert_interaction(self, interaction: Interaction):
+        self.interaction_pool.append(interaction)
+
+    def build_interaction(self, ask: PromptItem, response: Optimizer = None, single: bool = False):
         if not response and not single:
             raise Exception("Not Allowed Method")
         interaction = Interaction(ask=ask, reply=response, single=single, time=time.time() * 1000)
-        self.interaction_pool.append(interaction)
+        self.insert_interaction(interaction)
+
+    def insert_knowledge(self, knowledge: Interaction):
+        """基础知识参考添加"""
+        self.knowledge_pool.append(knowledge)
+
+    def build_knowledge(self, ask: PromptItem, response: PromptItem):
+        """基础知识参考构建"""
+        knowledge = Interaction(ask=ask, reply=response)
+        self.insert_knowledge(knowledge)
 
     def insert_prompt(self, prompt: PromptItem):
         """基础Prompt Buffer添加方法"""
         return self.prompt_buffer.append(prompt)
-
-    def insert_knowledge(self, ask: PromptItem, response: PromptItem):
-        """基础知识参考添加"""
-        knowledge = Interaction(ask=ask, reply=response)
-        self.knowledge_pool.append(knowledge)
 
     async def build_skeleton(self, skeleton: Antennae, query: PromptItem, llm_task: str = None) -> List[Interaction]:
         """
@@ -133,7 +146,7 @@ class PromptEngine(object):
         knowledge = await skeleton.run(prompt=query)
         return knowledge
 
-    def build_context(self, prompt: PromptItem, predict_tokens) -> str:
+    def build_context(self, prompt: PromptItem, predict_tokens) -> List[Interaction]:
         # Resize
         _llm_result_limit = self.llm.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
@@ -151,13 +164,10 @@ class PromptEngine(object):
             tokenizer=self.llm.tokenizer,
             reference_ratio=self.reference_ratio,
         ).run()
-        _prompt = f"{self.__connect_words}".join(_optimized_prompt)
-        _prompt += f"\n{prompt.prompt}"
-        _prompt += f"\n{self.profile.restart_name}: "
-        _prompt = self.llm.resize_sentence(_prompt, token=_llm_result_limit)
-        return _prompt
+        _optimized_prompt.append(Interaction(single=True, ask=prompt))
+        return _optimized_prompt
 
-    def build_prompt(self, predict_tokens: int = 500) -> Tuple[PromptItem, str]:
+    def build_prompt(self, predict_tokens: int = 500) -> Tuple[PromptItem, List[Interaction]]:
         """
         Optimising context and re-cutting
         """

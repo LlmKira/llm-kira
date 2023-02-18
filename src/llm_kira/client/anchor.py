@@ -16,7 +16,7 @@ from ..creator.engine import PromptEngine
 from ..error import LLMException
 
 # Utils
-from ..utils.chat import Detect
+from ..utils.chat import Detect, Sim
 
 # Completion
 from .types import ChatBotReturn
@@ -43,6 +43,15 @@ class ChatBot(object):
         if llm_model is None:
             raise LLMException("Whats your llm model?")
 
+    @staticmethod
+    def __rank_name(prompt: str, users: List[str]):
+        __temp = {}
+        for item in users:
+            __temp[item] = 0
+        users = list(__temp.keys())
+        _ranked = list(sorted(users, key=lambda i: Sim.cosion_similarity(pre=str(prompt), aft=str(i)), reverse=True))
+        return _ranked
+
     async def predict(self,
                       prompt: PromptEngine,
                       predict_tokens: Union[int] = 100,
@@ -62,17 +71,35 @@ class ChatBot(object):
         if predict_tokens > self.llm.get_token_limit():
             # Or Auto Cut?
             raise LLMException("Why your predict token > set token limit?")
-
+        _llm_result_limit = self.llm.get_token_limit() - predict_tokens
+        _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
         # Get
-        prompt_index, prompt = self.prompt.build_prompt(predict_tokens=predict_tokens)
+        _prompt_index, _prompt = self.prompt.build_prompt(predict_tokens=predict_tokens)
+        _prompt_list = []
+        _person_list = [f"{self.profile.start_name}:",
+                        f"{self.profile.restart_name}:",
+                        f"{self.profile.start_name}：",
+                        f"{self.profile.restart_name}：",
+                        ]
+        # for item in _prompt:
+        #     _person_list.append(f"{item.ask.start}{item.ask.connect_words}")
+        # _person_list = self.__rank_name(prompt=_prompt_index.prompt, users=_person_list)
+
+        # Prompt 构建
+        for item in _prompt:
+            _prompt_list.extend(item.content)
+
+        prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.start_name}:"
+        prompt_build = self.llm.resize_sentence(prompt_build, token=_llm_result_limit)
         # Get
         llm_result: LlmReturn = await self.llm.run(
-            prompt=prompt,
+            prompt=prompt_build,
             predict_tokens=predict_tokens,
-            llm_param=llm_param
+            llm_param=llm_param,
+            stop_words=_person_list
         )
-        self.prompt.insert_interaction(
-            ask=prompt_index,
+        self.prompt.build_interaction(
+            ask=_prompt_index,
             response=PromptItem(
                 start=self.profile.restart_name,
                 text=self.llm.parse_reply(llm_result.reply)
@@ -87,6 +114,6 @@ class ChatBot(object):
         return ChatBotReturn(
             conversation_id=f"{self.profile.conversation_id}",
             llm=llm_result,
-            ask=prompt_index.text,
+            ask=_prompt_index.text,
             reply=self.llm.parse_reply(llm_result.reply)
         )

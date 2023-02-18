@@ -91,5 +91,6 @@ class LlmBase(ABC):
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: LlmBaseParam = None,
+                  stop_words: list = None,
                   ) -> Optional[LlmReturn]:
         return None

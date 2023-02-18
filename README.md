@@ -46,7 +46,7 @@ import asyncio
 import random
 import llm_kira
 from llm_kira.client import Optimizer
-from llm_kira.client.types import PromptItem
+from llm_kira.client.types import PromptItem, Interaction
 from llm_kira.client.llms.openai import OpenAiParam
 from typing import List
 
@@ -73,16 +73,29 @@ chat_client = receiver.ChatBot(profile=conversation,
                                llm_model=llm
                                )
 
+
 async def chat():
-    promptManager = llm_kira.creator.PromptEngine(profile=conversation,
-                                                  connect_words="\n",
-                                                  memory_manger=mem,
-                                                  llm_model=llm,
-                                                  description="这是一段对话",
-                                                  reference_ratio=0.5,
-                                                  forget_words=["忘掉对话"],
-                                                  optimizer=Optimizer.SinglePoint,
-                                                  )
+    promptManager = llm_kira.creator.PromptEngine(
+        reverse_prompt_buffer=False,  # 设定是首条还是末尾的 prompt 当 input
+        profile=conversation,
+        connect_words="\n",
+        memory_manger=mem,
+        llm_model=llm,
+        description="这是一段对话",  # 推荐在这里进行强注入
+        reference_ratio=0.5,
+        forget_words=["忘掉对话"],
+        optimizer=Optimizer.SinglePoint,
+    )
+    # 第三人称
+    promptManager.insert_prompt(prompt=PromptItem(start="Neko", text="喵喵喵"))
+    # 直接添加
+    promptManager.insert_interaction(Interaction(single=True, ask=PromptItem(start="Neko", text="MewMewMewMew")))
+    # 添加交互
+    promptManager.insert_interaction(Interaction(single=False,
+                                                 ask=PromptItem(start="Neko", text="MewMewMewMew"),
+                                                 reply=PromptItem(start="Neko", text="MewMewMewMew"))
+                                     )
+    # 添加新内容
     promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
     response = await chat_client.predict(
         prompt=promptManager,
@@ -96,7 +109,7 @@ async def chat():
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
 
-    promptManager.clean(clean_prompt=True,clean_knowledge=False,clean_memory=False)
+    promptManager.clean(clean_prompt=True, clean_knowledge=False, clean_memory=False)
     promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text='今天天气怎么样'))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
                                          prompt=promptManager,
@@ -120,30 +133,36 @@ asyncio.run(chat())
 
 ```
 ├── client
-│      ├── agent.py  //profile class
-│      ├── anchor.py // client etc.
-│      ├── enhance.py // web search etc.
-│      ├── __init__.py
-│      ├── llm.py // llm func.
-│      ├── module  // plugin for enhance
-│      ├── Optimizer.py // memory Optimizer (cutter
-│      ├── pot.py // test cache
-│      ├── test_module.py // test plugin
-│      ├── text_analysis_tools // nlp support
-│      ├── types.py // data class
-│      └── vocab.json // cache?
-├── __init__.py
-├── openai  // func
-│      ├── api // data
-│      ├── __init__.py
-│      └── resouce  // func
+│        ├── agent.py // 基本类
+│        ├── anchor.py // 代理端
+│        ├── enhance.py // 外部接口方法
+│        ├── __init__.py 
+│        ├── llms  // 大语言模型类
+│        ├── module // 注入模组
+│        ├── Optimizer.py  // 优化器
+│        ├── test //测试
+│        ├── text_analysis_tools
+│        ├── types.py // 类型
+│        └── vocab.json 
+├── creator  // 提示构建引擎
+│        ├── engine.py
+│        ├── __init__.py
+├── error.py // 通用错误类型
+├── __init__.py //主入口
+├── radio    // 外部通信类型，知识池
+│        ├── anchor.py
+│        ├── crawer.py
+│        ├── decomposer.py
+│        └── setting.py
 ├── requirements.txt
-└── utils  // utils... tools...
+├── tool  // LLM 工具类型
+│        ├── __init__.py
+│        ├── openai
+└── utils // 工具类型/语言探测
     ├── chat.py
     ├── data.py
-    ├── fatlangdetect //lang detect
+    ├── fatlangdetect
     ├── langdetect
     ├── network.py
     └── setting.py
-
 ```

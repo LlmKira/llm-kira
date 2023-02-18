@@ -13,13 +13,14 @@ import src.llm_kira as llm_kira
 import setting
 from src.llm_kira.client import Optimizer
 from src.llm_kira.client.llms.openai import OpenAiParam
-from src.llm_kira.client.types import PromptItem
+from src.llm_kira.client.types import PromptItem, Interaction
 
 openaiApiKey = setting.ApiKey
 openaiApiKey: List[str]
 print(llm_kira.RedisConfig())
 
 import openai as open_clinet
+
 open_clinet.api_key = random.choice(openaiApiKey)  # supply your API key however you choose
 
 
@@ -71,22 +72,24 @@ chat_client = receiver.ChatBot(profile=conversation,
 
 
 async def chat():
-    promptManager = llm_kira.creator.PromptEngine(profile=conversation,
-                                                  connect_words="\n",
-                                                  memory_manger=mem,
-                                                  llm_model=llm,
-                                                  description="这是一段对话",
-                                                  reference_ratio=0.5,
-                                                  forget_words=["忘掉对话"],
-                                                  optimizer=Optimizer.SinglePoint,
-                                                  )
+    promptManager = llm_kira.creator.PromptEngine(
+        reverse_prompt_buffer=False,
+        profile=conversation,
+        connect_words="\n",
+        memory_manger=mem,
+        llm_model=llm,
+        description="这是一段对话",
+        reference_ratio=0.5,
+        forget_words=["忘掉对话"],
+        optimizer=Optimizer.SinglePoint,
+    )
     # 大型数据对抗测试
     # promptManager.insert_prompt(prompt=PromptItem(start="Neko", text=random_string(8000)))
     # promptManager.insert_prompt(prompt=PromptItem(start="Neko", text=random_string(500)))
 
     # 多 prompt 对抗测试
     promptManager.insert_prompt(prompt=PromptItem(start="Neko", text="喵喵喵"))
-
+    promptManager.insert_interaction(Interaction(single=True, ask=PromptItem(start="alice", text="MewMewMewMew")))
     # 测试
     promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
     response = await chat_client.predict(

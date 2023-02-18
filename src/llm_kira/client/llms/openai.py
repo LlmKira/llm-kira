@@ -264,7 +264,7 @@ class OpenAi(LlmBase):
                             prompt=str(prompt),
                             max_tokens=int(predict_tokens),
                             user=str(self.profile.get_conversation_hash()),
-                            stop=stop_words,
+                            stop=stop_words[:4],
                             )
         # Anonymous
         if anonymous_user:
