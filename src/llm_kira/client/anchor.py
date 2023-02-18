@@ -43,7 +43,8 @@ class ChatBot(object):
                         f"{self.profile.restart_name}：",
                         ]
         for item in prompt_list:
-            _person_list.append(f"{item.ask.start}{item.ask.connect_words}")
+            if item.ask.connect_words.strip() in [":", "："]:
+                _person_list.append(f"{item.ask.start}{item.ask.connect_words}")
         _person_list = self.__rank_name(prompt=prompt.prompt, users=_person_list)
         return _person_list
 

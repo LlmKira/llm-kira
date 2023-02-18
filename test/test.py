@@ -11,6 +11,7 @@ from typing import List
 # 最小单元测试
 import src.llm_kira as llm_kira
 import setting
+from src.llm_kira.creator.think import ThinkEngine, Hook
 from src.llm_kira.client import Optimizer
 from src.llm_kira.client.llms.openai import OpenAiParam
 from src.llm_kira.client.types import PromptItem, Interaction
@@ -69,6 +70,14 @@ mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
                                llm_model=llm
                                )
+
+
+async def mood_hook():
+    _think = ThinkEngine(profile=conversation)
+    _think.register_hook(Hook(name="happy", trigger="happy", value=2, last=60, time=int(time.time())))  # 60s
+    _think.hook("happy")
+    print(_think.hook_pool)
+    print(_think.build_status(rank=5))
 
 
 async def chat():
@@ -175,7 +184,8 @@ async def GPT2():
 
 t1 = time.time()
 # asyncio.run(completion())
-asyncio.run(chat())
+asyncio.run(mood_hook())
+# asyncio.run(chat())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())

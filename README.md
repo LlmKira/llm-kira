@@ -128,6 +128,25 @@ async def chat():
 
 asyncio.run(chat())
 ```
+## Life Status Builder
+
+```python
+import llm_kira
+from llm_kira.creator.think import ThinkEngine, Hook
+
+conversation = llm_kira.client.Conversation(
+    start_name="Human:",
+    restart_name="AI:",
+    conversation_id=10093,  # random.randint(1, 10000000),
+)
+_think = ThinkEngine(profile=conversation)
+_think.register_hook(Hook(name="happy", trigger="happy", value=2, last=60, time=int(time.time())))  # 60s
+# Hook
+_think.hook("happy")
+print(_think.hook_pool)
+print(_think.build_status(rank=5))
+# rank=sum(value,value,value)
+```
 
 ## Frame
 

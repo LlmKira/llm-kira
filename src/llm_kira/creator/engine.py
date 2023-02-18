@@ -80,13 +80,16 @@ class PromptEngine(object):
 
     @property
     def prompt(self):
+        _buffer = self.prompt_buffer.copy()
+        if self.reverse_prompt_buffer:
+            _buffer = list(reversed(_buffer))
         if self.prompt_buffer:
-            return self.prompt_buffer[-1]
+            return _buffer[-1]
         else:
             return None
 
     def _build_prompt_buffer(self):
-        _buffer = self.prompt_buffer
+        _buffer = self.prompt_buffer.copy()
         if self.reverse_prompt_buffer:
             _buffer = list(reversed(_buffer))
         _index = _buffer.pop(-1)

@@ -5,6 +5,7 @@
 # @Github    ：sudoskys
 import ast
 import json
+import re
 from typing import Union, Optional, List
 from loguru import logger
 from ..client.types import Interaction
@@ -30,6 +31,13 @@ except Exception:
 
 if not filedb and not redis_installed:
     raise Exception("Db/redis all Unusable")
+
+
+def safe_sentence(_sentence):
+    _sentence = _sentence.replace("_", "玹")
+    _sentence = re.sub(u"([^\u4e00-\u9fa5\u0030-\u0039\u0041-\u005a\u0061-\u007a])", "", _sentence)
+    _sentence = _sentence.replace("玹", "_")
+    return _sentence
 
 
 class RedisWorker(object):
@@ -185,14 +193,18 @@ def GetDataManager(redis_config: RedisConfig,
 
 
 class Bucket(object):
-    def __init__(self, uid: int):
+    def __init__(self,
+                 uid: int,
+                 area: str = "cache"
+                 ):
         """
         消息流存储器
         :param uid: 独立 id ，是一个消息桶
         """
         self.uid = str(uid)
+        area = safe_sentence(area)[:50]
         # 工具数据类型
-        self.MsgFlowData = GetDataManager(_redis_config, _db_file, prefix="llm_kira_cache_")
+        self.MsgFlowData = GetDataManager(_redis_config, _db_file, prefix=f"llm_kira_{area}_")
 
     def get(self):
         _get = self.MsgFlowData.getKey(self.uid)
