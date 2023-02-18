@@ -184,8 +184,8 @@ async def GPT2():
 
 t1 = time.time()
 # asyncio.run(completion())
-asyncio.run(mood_hook())
-# asyncio.run(chat())
+# asyncio.run(mood_hook())
+asyncio.run(chat())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())

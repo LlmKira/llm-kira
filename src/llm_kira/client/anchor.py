@@ -3,7 +3,6 @@
 # @FileName: anchor.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-import random
 from typing import Union, Callable, List, Optional
 from loguru import logger
 
