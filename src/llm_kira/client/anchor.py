@@ -109,6 +109,7 @@ class ChatBot(object):
 
         # Re-Save
         self.prompt.save_interaction()
+        self.prompt.save_knowledge()
 
         # Return
         return ChatBotReturn(

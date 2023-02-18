@@ -25,6 +25,7 @@ class PromptEngine(object):
     def __init__(self,
                  profile: Conversation,
                  memory_manger: MemoryManager,
+                 knowledge_manger: MemoryManager = None,
                  llm_model: LlmBase = None,
                  description: str = None,
                  connect_words: str = "\n",
@@ -46,6 +47,7 @@ class PromptEngine(object):
         self.profile = profile
         self.llm = llm_model
         self.memory_manger = memory_manger
+        self.knowledge_manger = knowledge_manger
         self.reference_ratio = reference_ratio
         self.optimizer = optimizer
         self.reverse_prompt_buffer = reverse_prompt_buffer
@@ -60,8 +62,9 @@ class PromptEngine(object):
         self.description: str = description  # 头部状态标识器
         self.prompt_buffer: List[PromptItem] = []  # 外骨骼用
         self.interaction_pool: List[Interaction] = self.memory_manger.read_context()
-        self.knowledge_pool: List[Interaction] = []  # 外部连续对话用，采用 insert 注入
-
+        self.knowledge_pool: List[Interaction] = []
+        if self.knowledge_manger:
+            self.knowledge_pool = self.knowledge_manger.read_context()
         if optimizer is None:
             self.optimizer = Optimizer.SinglePoint
         self._MsgFlow = MsgFlow(uid=self.profile.conversation_id)
@@ -103,6 +106,14 @@ class PromptEngine(object):
 
     def save_interaction(self):
         return self.memory_manger.save_context(self.interaction_pool, override=True)
+
+    def read_knowledge(self):
+        if self.knowledge_manger:
+            return self.knowledge_manger.read_context()
+
+    def save_knowledge(self):
+        if self.knowledge_manger:
+            return self.knowledge_manger.save_context(self.interaction_pool, override=True)
 
     def clean(self, clean_prompt: bool = False, clean_memory: bool = False, clean_knowledge: bool = False):
         if clean_knowledge:
