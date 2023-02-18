@@ -61,12 +61,14 @@ class ChatBot(object):
                       predict_tokens: Union[int] = 100,
                       llm_param: LlmBaseParam = None,
                       parse_reply: Callable[[list], str] = None,
+                      rank_name: bool = True,
                       ) -> ChatBotReturn:
         """
         :param prompt: PromptEngine
         :param predict_tokens: 预测 Token 位
         :param llm_param: 大语言模型参数
         :param parse_reply: Callable[[list], str] 覆写解析方法
+        :param rank_name: 自动排序停止词减少第三人称的冲突出现
         """
         self.prompt = prompt
         # ReWrite
@@ -80,14 +82,15 @@ class ChatBot(object):
         # Get
         _prompt_index, _prompt = self.prompt.build_prompt(predict_tokens=predict_tokens)
         _prompt_list = []
-        _person_list = None  # self.__person(prompt=_prompt_index, prompt_list=_prompt)
+        _person_list = None if not rank_name else self.__person(prompt=_prompt_index, prompt_list=_prompt)
 
         # Prompt 构建
         for item in _prompt:
             _prompt_list.extend(item.content)
 
-        prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.start_name}:"
+        prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.restart_name}:"
         prompt_build = self.llm.resize_sentence(prompt_build, token=_llm_result_limit)
+
         # Get
         llm_result: LlmReturn = await self.llm.run(
             prompt=prompt_build,
