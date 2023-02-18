@@ -7,8 +7,6 @@ import random
 from typing import Union, Callable, List, Optional
 from loguru import logger
 
-# Tool
-from .enhance import Support
 from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
 from .types import LlmReturn, Interaction, PromptItem
@@ -21,11 +19,6 @@ from ..utils.chat import Detect, Sim
 # Completion
 from .types import ChatBotReturn
 from .agent import Conversation, MemoryManager
-
-# Antennae
-from ..radio.decomposer import PromptTool
-from ..radio.setting import HELP_WORDS
-from ..utils.data import MsgFlow
 
 
 class ChatBot(object):
