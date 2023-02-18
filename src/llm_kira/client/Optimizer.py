@@ -8,6 +8,7 @@
 """
 import math
 import time
+from operator import attrgetter
 from typing import List
 import datetime
 from .types import Interaction, PromptItem, InteractionWeight
@@ -84,7 +85,7 @@ def build_weight(convert: List[Interaction]):
     ]
     """
     _returner = []
-    convert = sorted(convert, key=lambda x: x.time, reverse=True)
+    convert.sort(key=attrgetter('time'), reverse=True)
     for item in convert:
         _returner.append(InteractionWeight(interaction=item, weight=[]))
     return _returner
