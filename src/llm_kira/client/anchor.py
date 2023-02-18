@@ -43,6 +43,17 @@ class ChatBot(object):
         if llm_model is None:
             raise LLMException("Whats your llm model?")
 
+    def __person(self, prompt, prompt_list):
+        _person_list = [f"{self.profile.start_name}:",
+                        f"{self.profile.restart_name}:",
+                        f"{self.profile.start_name}：",
+                        f"{self.profile.restart_name}：",
+                        ]
+        for item in prompt_list:
+            _person_list.append(f"{item.ask.start}{item.ask.connect_words}")
+        _person_list = self.__rank_name(prompt=prompt.prompt, users=_person_list)
+        return _person_list
+
     @staticmethod
     def __rank_name(prompt: str, users: List[str]):
         __temp = {}
@@ -76,14 +87,7 @@ class ChatBot(object):
         # Get
         _prompt_index, _prompt = self.prompt.build_prompt(predict_tokens=predict_tokens)
         _prompt_list = []
-        _person_list = [f"{self.profile.start_name}:",
-                        f"{self.profile.restart_name}:",
-                        f"{self.profile.start_name}：",
-                        f"{self.profile.restart_name}：",
-                        ]
-        # for item in _prompt:
-        #     _person_list.append(f"{item.ask.start}{item.ask.connect_words}")
-        # _person_list = self.__rank_name(prompt=_prompt_index.prompt, users=_person_list)
+        _person_list = None  # self.__person(prompt=_prompt_index, prompt_list=_prompt)
 
         # Prompt 构建
         for item in _prompt:
