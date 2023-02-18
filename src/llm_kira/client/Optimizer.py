@@ -85,8 +85,17 @@ def build_weight(convert: List[Interaction]):
     ]
     """
     _returner = []
-    convert.sort(key=attrgetter('time'), reverse=True)
+    _covert = []
     for item in convert:
+        try:
+            _ = item.time
+        except Exception as e:
+            pass
+        else:
+            _covert.append(item)
+    _covert: List[Interaction]
+    _covert.sort(key=attrgetter('time'), reverse=True)
+    for item in _covert:
         _returner.append(InteractionWeight(interaction=item, weight=[]))
     return _returner
 

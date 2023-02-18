@@ -45,9 +45,9 @@ class Hook(BaseModel):
 
 # 钩子迭代机
 class HookPool(BaseModel):
-    time: int = int(time.strftime("%Y%m%d%H", time.localtime()))
     hook: List[Hook] = []
     last_hook_result: List[Hook] = []
+    time: int = int(time.strftime("%Y%m%d%H", time.localtime()))
 
 
 class HookRank(BaseModel):
