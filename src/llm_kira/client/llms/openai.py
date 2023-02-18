@@ -85,7 +85,7 @@ class OpenAi(LlmBase):
                  call_func: Callable[[dict, str], Any] = None,
                  ):
         """
-        chatGPT 的实现由上下文实现，所以我会做一个存储器来获得上下文
+        Openai LLM 的方法类集合
         :param api_key: api key
         :param token_limit: 总限制
         :param call_func: 回调
@@ -174,11 +174,11 @@ class OpenAi(LlmBase):
 
     async def task_context(self, task: str, prompt: str, predict_tokens: int = 500) -> LlmReturn:
         prompt = self.resize_sentence(prompt, 1200)
-        _prompt = f"Text: {prompt}\n{task}: "
+        _prompt = f"Text:{prompt}\n{task}: "
         llm_result = await self.run(prompt=_prompt,
                                     predict_tokens=predict_tokens,
                                     llm_param=OpenAiParam(model_name="text-davinci-003"),
-                                    stop_words=["\n\n"]
+                                    stop_words=["Text:", "\n\n"]
                                     )
         return llm_result
 

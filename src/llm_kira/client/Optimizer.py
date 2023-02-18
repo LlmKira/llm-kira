@@ -10,9 +10,8 @@ import math
 import time
 from typing import List
 import datetime
-import numpy
-from .types import Memory_Flow
-from ..utils.chat import Utils, Sim, SimilarityUtils
+from .types import Interaction, PromptItem, InteractionWeight
+from ..utils.chat import Utils, Sim
 from ..utils.data import MsgFlow
 
 
@@ -59,367 +58,148 @@ def random_string(length):
     return result
 
 
-def convert_msgflow_to_list(msg_list: List[Memory_Flow],
+def convert_msgflow_to_list(message: List[Interaction],
                             sign: bool = True
                             ) -> list:
     """
     提取以单条 msgflow 组成的列表的回复。
-    :param msg_list:消息列表
+    :param message:消息列表
     :param sign: 是否签名
     :return:
     """
     _result = []
-    for ir in msg_list:
-        ask, reply = MsgFlow.get_content(memory_flow=ir, sign=sign)
+    for item in message:
+        ask, reply = MsgFlow.parse(interaction=item, sign=sign)
         _result.append(ask)
         _result.append(reply)
     return _result
 
 
-class Point(object):
+def build_weight(convert: List[Interaction]):
+    """
+    构造权重表
+    [
+        [some,[1, 12]],
+        [some,[1, 12]],
+    ]
+    """
+    _returner = []
+    convert = sorted(convert, key=lambda x: x.time, reverse=True)
+    for item in convert:
+        _returner.append(InteractionWeight(interaction=item, weight=[]))
+    return _returner
 
+
+class Point(object):
     def run(self):
         pass
-
-
-class MatrixPoint(Point):
-    def __init__(self,
-                 tokenizer,
-                 prompt: str = "",
-                 memory: List[dict] = None,
-                 attention: int = 3,
-                 # start_token: int = 0,
-                 extra_token: int = 0,
-                 token_limit: int = 2000,
-                 ):
-        """
-                群组多点聊天，适用于 Group 的记忆对象
-                数据清洗采用权重设定，而不操作元素删减
-                :param token_limit: 提示词限制
-                # :param start_token: 中间件传过来的 token,作为限制的初始值
-                :param attention: 注意力
-                :param prompt: 记忆提示
-                :param extra_token: 需要预留的位置
-                :param memory: 记忆桶数据
-                :return: 新的列表
-        """
-        self.memory = memory
-        self.attention = attention
-        # self.start_token = start_token
-        self.extra_token = extra_token
-        self.token_limit = token_limit
-        self.prompt = prompt
-        self.tokenizer = tokenizer
-
-    def run(self) -> list:
-        # 单条消息的内容 {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]}
-        memory = self.memory
-        attention = self.attention
-        prompt = self.prompt
-        # start_token = self.start_token
-        if self.memory is None:
-            memory = []
-        _create_token = self.token_limit - self.extra_token
-
-        # 入口检查
-        if len(memory) - attention < 0:
-            return convert_msgflow_to_list(memory)
-
-        # 转换为
-        for item in range(len(memory)):
-            if isinstance(memory[item], Memory_Flow):
-                memory[item] = memory[item].dict()
-        memory: list
-        memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-
-        def forgetting_curve(x):
-            _weight = numpy.exp(-x / 5) * 100
-            # 低谷值
-            _weight = _weight if _weight > 0 else 0
-            # 高度线
-            _weight = _weight if _weight < 100 else 100
-            # 推底值，防止无法唤起
-            _weight = _weight if _weight > 12 else 12
-            return _weight
-
-        # 计算初始保留比并初始化
-        for i in range(0, len(memory)):
-            _forget = forgetting_curve(i)
-            if _forget > 5:
-                memory[i]["content"]["weight"] = [_forget]
-            else:
-                memory[i]["content"]["weight"] = []
-
-        # 相似度检索
-        for i in range(0, len(memory)):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _ask_diff = Sim.cosion_similarity(pre=prompt, aft=ask)
-            _ask_diff = _ask_diff * 100
-            score = _ask_diff if _ask_diff < 95 else 1
-            if score != 0:
-                memory[i]["content"]["weight"].append(score)
-
-        # 主题检索
-        _key = Utils.tfidf_keywords(prompt, topK=5)
-        full_score = len(_key)
-        if full_score > 5:
-            for i in range(0, len(memory)):
-                score = 0
-                ask, reply = MsgFlow.get_content(memory[i], sign=False)
-                for ir in _key:
-                    if ir in f"{ask}{reply}":
-                        score += 1
-                _get = (score / full_score) * 100
-                _get = _get if _get < 95 else 50
-                if _get != 0:
-                    memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
-
-        # 进行筛选，计算限制
-        _msg_flow = []
-        _msg_return = []
-        _now_token = 0
-        memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-        for i in range(0, len(memory)):
-            total = len(memory[i]["content"]["weight"])
-            full_score = total * 100 + 1
-            score = sum(memory[i]["content"]["weight"])
-            level = (score / full_score) * 100
-            ask, reply = MsgFlow.get_content(memory[i], sign=True)
-            # print(ask, reply, level)
-            if level > 50:
-                _now_token += self.tokenizer(f"{ask}{reply}")
-                if _now_token > _create_token:
-                    break
-                _msg_flow.append(memory[i])
-        _msg_flow = sorted(_msg_flow, key=lambda x: x['time'], reverse=False)
-        # print(_msg_flow)
-        _msg_flow_list = convert_msgflow_to_list(_msg_flow)
-        _msg_return.extend(_msg_flow_list)
-        return _msg_flow_list
 
 
 class SinglePoint(Point):
     def __init__(self,
                  tokenizer,
-                 prompt: str = "",
-                 memory: List[dict] = None,
+                 prompt: PromptItem = "",
+                 desc: str = "",
                  attention: int = 3,
-                 # start_token: int = 0,
-                 extra_token: int = 0,
+                 interaction: List[Interaction] = None,
+                 knowledge: List[Interaction] = None,
+                 reference_ratio: float = 0.5,
                  token_limit: int = 2000,
+                 forget_words: List[str] = None,
                  ):
-        """
-                单点聊天，更准确
-                数据清洗采用权重设定，而不操作元素删减
-                :param token_limit: 提示词限制
-                # :param start_token: 中间件传过来的 token,作为限制的初始值
-                :param attention: 注意力
-                :param prompt: 记忆提示
-                :param extra_token: 需要预留的位置
-                :param memory: 记忆桶数据
-                :return: 新的列表
-        """
-        self.memory = memory
-        self.attention = attention
-        # self.start_token = start_token
-        self.extra_token = extra_token
         self.token_limit = token_limit
         self.prompt = prompt
+        self.desc = desc
         self.tokenizer = tokenizer
+        self.attention = attention
+        self.interaction = interaction
+        self.knowledge = knowledge
+        self.reference_ratio = reference_ratio if 0 <= reference_ratio <= 1 else 0.5
+        self.forget_words = forget_words if forget_words else []
 
-    def run(self) -> list:
+    @staticmethod
+    def forgetting_curve(x):
+        _weight = math.exp(-x / 5) * 100
+        _weight = _weight if _weight > 0 else 0
+        _weight = _weight if _weight < 100 else 100
+        # 推底值
+        _weight = _weight if _weight > 12 else 12
+        return _weight
+
+    def _filler(self, _message: List[InteractionWeight], token: int):
+        __now = 0
+        __returner = []
+        for __item in _message:
+            if __item.score > 0.5 and __now < token:
+                __now += self.tokenizer(__item.interaction.raw)
+                __returner.extend(__item.interaction.content)
+        # IMPORTANT
+        __returner = list(reversed(__returner))
+        return __returner
+
+    def run(self) -> List[str]:
         # 单条消息的内容 {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]}
-        memory = self.memory
-        attention = self.attention
         prompt = self.prompt
-        # start_token = self.start_token
-        if self.memory is None:
-            memory = []
-        _create_token = self.token_limit - self.extra_token
+        interaction = build_weight(self.interaction)
+        knowledge = build_weight(self.knowledge)
+        _knowledge_token_limit = int(self.token_limit * self.reference_ratio)
+        _interaction_token_limit = self.token_limit - _knowledge_token_limit
 
-        # 入口检查
-        if len(memory) - attention < 0:
-            return convert_msgflow_to_list(memory)
+        # Desc
+        if self.tokenizer(self.desc) > self.token_limit:
+            return [self.desc]
+        _returner = [self.desc]
 
-        # 转换为
-        for item in range(len(memory)):
-            if isinstance(memory[item], Memory_Flow):
-                memory[item] = memory[item].dict()
-        memory: list
-        memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-        # Body
-        _, _prompt_body = get_head_foot(prompt)
-        if len(_prompt_body) < 2:
-            _prompt_body = _prompt_body + "[short sentence]"
+        # knowledge 相似度检索
+        for item in knowledge:
+            _content = "".join(item.interaction.content)
+            _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
+            score = _ask_diff * 100
+            item.weight.append(score)
 
-        # 计算初始保留比并初始化
-        for i in range(0, len(memory)):
-            _hour_cal = cal_time_seconds(stamp1=time.time(), stamp2=memory[i]['time'] / 1000) / 3600
-            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
-            _forget = sim_forget(sim=0.5,
-                                 hour=_hour_cal,
-                                 rank=0.5) * 100
-            memory[i]["content"]["weight"] = [_forget]
+        # interaction attention
+        _attention = self.attention if len(interaction) >= self.attention else len(interaction)
+        for ir in range(0, _attention):
+            interaction[ir].weight.append(77)
 
-        # 筛选标准发言
-        for i in range(0, len(memory)):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            if len(ask) < 1 or len(reply) < 1:
-                memory[i]["content"]["weight"].append(-250)
+        # interaction 遗忘函数
+        for i in range(0, len(interaction)):
+            _forget = self.forgetting_curve(i)
+            interaction[i].weight.append(_forget)
 
-        # 相似度检索
-        for i in range(attention, len(memory)):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _, _prompt_body = get_head_foot(prompt)
-            _ask_diff = Sim.cosion_similarity(pre=_prompt_body, aft=ask)
+        # interaction 相似度检索
+        for item in interaction:
+            _content = "".join(item.interaction.content)
+            _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
             _ask_diff = _ask_diff * 100
-            _edit_diff = Sim.edit_similarity(pre=_prompt_body, aft=ask)
+            _edit_diff = Sim.edit_similarity(pre=prompt.text, aft=_content)
             if _edit_diff < 4:
                 score = _ask_diff * 0.2
             else:
                 score = _ask_diff if _ask_diff < 90 else 1
-            memory[i]["content"]["weight"].append(score)
+            item.weight.append(score)
 
-        # 主题检索
-        _key = Utils.tfidf_keywords(prompt, topK=5)
+        # interaction 主题检索
+        _key = Utils.tfidf_keywords(prompt.prompt, topK=5)
         full_score = len(_key)
         if full_score > 5:
-            for i in range(0, len(memory)):
+            for item in interaction:
                 score = 0
-                ask, reply = MsgFlow.get_content(memory[i], sign=False)
+                _content = "".join(item.interaction.content)
                 for ir in _key:
-                    if ir in f"{ask}{reply}":
+                    if ir in _content:
                         score += 1
                 _get = (score / full_score) * 100
                 _get = _get if _get < 95 else 50
                 if _get != 0:
-                    memory[i]["content"]["weight"].append(_get)  # 基准数据，置信为 0.5 百分比
+                    item.weight.append(_get)
 
-        # 进行筛选，计算限制
-        _msg_flow = []
-        _msg_return = []
-        _now_token = 0
-        memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-        for i in range(0, len(memory)):
-            total = len(memory[i]["content"]["weight"])
-            full_score = total * 100 + 1
-            score = sum(memory[i]["content"]["weight"])
-            level = (score / full_score) * 100
-            ask, reply = MsgFlow.get_content(memory[i], sign=True)
-            # print(ask, reply, level)
-            if level > 50:
-                _now_token += self.tokenizer(f"{ask}{reply}")
-                if _now_token > _create_token:
-                    break
-                _msg_flow.append(memory[i])
-        _msg_flow = sorted(_msg_flow, key=lambda x: x['time'], reverse=False)
-        # print(_msg_flow)
-        _msg_flow_list = convert_msgflow_to_list(_msg_flow)
-        _msg_return.extend(_msg_flow_list)
-        return _msg_flow_list
-
-
-class RelatePoint(Point):
-    def __init__(self,
-                 tokenizer,
-                 prompt: str = "",
-                 memory: List[dict] = None,
-                 attention: int = 3,
-                 # start_token: int = 0,
-                 extra_token: int = 0,
-                 token_limit: int = 2000,
-                 ):
-        """
-                单点聊天，更准确
-                数据清洗采用权重设定，而不操作元素删减
-                :param token_limit: 提示词限制
-                # :param start_token: 中间件传过来的 token,作为限制的初始值
-                :param attention: 注意力
-                :param prompt: 记忆提示
-                :param extra_token: 需要预留的位置
-                :param memory: 记忆桶数据
-                :return: 新的列表
-        """
-        self.memory = memory
-        self.attention = attention
-        # self.start_token = start_token
-        self.extra_token = extra_token
-        self.token_limit = token_limit
-        self.prompt = prompt
-        self.tokenizer = tokenizer
-
-    def run(self) -> list:
-        # 单条消息的内容 {content {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]},time xxxx}
-        memory = self.memory
-        attention = self.attention
-        prompt = self.prompt
-        # start_token = self.start_token
-        if self.memory is None:
-            memory = []
-        _create_token = self.token_limit - self.extra_token
-        # 入口检查
-        if len(memory) - attention < 0:
-            return convert_msgflow_to_list(memory)
-        # 转换为
-        for item in range(len(memory)):
-            if isinstance(memory[item], Memory_Flow):
-                memory[item] = memory[item].dict()
-        memory: list
-        # 重排 prompt 在开头
-        memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-
-        # Body
-        _, _prompt_body = get_head_foot(prompt)
-        if len(_prompt_body) < 2:
-            _prompt_body = _prompt_body + "[short sentence]"
-
-        # 计算初始保留比并初始化
-        for i in range(0, len(memory)):
-            _hour_cal = cal_time_seconds(stamp1=time.time(), stamp2=memory[i]['time'] / 1000) / 3600
-            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
-            _forget = sim_forget(sim=0.5,
-                                 hour=_hour_cal,
-                                 rank=0.5) * 100
-            memory[i]["content"]["weight"] = [_forget]
-
-        # 相似度检索
-        _target = []
-        for i in range(0, len(memory)):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _target.append(f"{ask}{reply}")
-        _sim_ = SimilarityUtils().similarity(query=_prompt_body, corpus=_target, topn=10)
-        for i in range(0, len(memory)):
-            ask, reply = MsgFlow.get_content(memory[i], sign=False)
-            _key = f"{ask}{reply}"
-            _ask_diff = _sim_.get(_key) if _sim_.get(_key) else 0.01
-            _ask_diff = _ask_diff * 100
-            _edit_diff = Sim.edit_similarity(pre=_prompt_body, aft=ask)
-            if _edit_diff < 4:
-                score = _ask_diff * 0.2
-            else:
-                score = _ask_diff if _ask_diff < 90 else 120
-            if score >= 0:
-                memory[i]["content"]["weight"].append(score)
-
-        # 限制器
-        _msg_flow = []
-        _msg_return = []
-        _now_token = 0
-        # 从尾部进入
-        memory = sorted(memory, key=lambda x: x['time'], reverse=True)
-        for i in range(0, len(memory)):
-            total = len(memory[i]["content"]["weight"])
-            full_score = total * 100 + 1
-            score = sum(memory[i]["content"]["weight"])
-            level = (score / full_score) * 100
-            ask, reply = MsgFlow.get_content(memory[i], sign=True)
-            if level > 50:
-                _now_token += self.tokenizer(f"{ask}{reply}")
-                if _now_token > _create_token:
-                    break
-                _msg_flow.append(memory[i])
-        # 重排为正常顺序
-        _msg_flow = sorted(_msg_flow, key=lambda x: x['time'], reverse=False)
-        _msg_flow_list = convert_msgflow_to_list(_msg_flow)
-        _msg_return.extend(_msg_flow_list)
-        return _msg_flow_list
+        # Fill
+        _returner.extend(self._filler(_message=knowledge, token=_knowledge_token_limit))
+        _forget_all = False
+        for item in self.forget_words:
+            if item in prompt.text:
+                _forget_all = True
+        if not _forget_all:
+            _returner.extend(self._filler(_message=interaction, token=_interaction_token_limit))
+        return _returner

@@ -70,22 +70,25 @@ llm = llm_kira.client.llms.OpenAi(
 
 mem = receiver.MemoryManager(profile=conversation)
 chat_client = receiver.ChatBot(profile=conversation,
-                               memory_manger=mem,
-                               optimizer=Optimizer.SinglePoint,
-                               llm_model=llm)
-
+                               llm_model=llm
+                               )
 
 async def chat():
-    promptManager = receiver.PromptManager(profile=conversation,
-                                           connect_words="\n",
-                                           template="Templates, custom prefixes"
-                                           )
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text="My id is 1596321"))
-    response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003", n=2, best_of=2),
-                                         prompt=promptManager,
-                                         predict_tokens=500,
-                                         increase="External enhancements, or searched result",
-                                         )
+    promptManager = llm_kira.creator.PromptEngine(profile=conversation,
+                                                  connect_words="\n",
+                                                  memory_manger=mem,
+                                                  llm_model=llm,
+                                                  description="这是一段对话",
+                                                  reference_ratio=0.5,
+                                                  forget_words=["忘掉对话"],
+                                                  optimizer=Optimizer.SinglePoint,
+                                                  )
+    promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
+    response = await chat_client.predict(
+        prompt=promptManager,
+        llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),
+        predict_tokens=1000,
+    )
     print(f"id {response.conversation_id}")
     print(f"ask {response.ask}")
     print(f"reply {response.reply}")
@@ -93,12 +96,11 @@ async def chat():
     print(f"usage:{response.llm.raw}")
     print(f"---{response.llm.time}---")
 
-    promptManager.clean()
-    promptManager.insert(item=PromptItem(start=conversation.start_name, text="Whats my id？"))
+    promptManager.clean(clean_prompt=True,clean_knowledge=False,clean_memory=False)
+    promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text='今天天气怎么样'))
     response = await chat_client.predict(llm_param=OpenAiParam(model_name="text-davinci-003"),
                                          prompt=promptManager,
                                          predict_tokens=500,
-                                         increase="外部增强:每句话后面都要带 “喵”",
                                          # parse_reply=None
                                          )
     _info = "parse_reply 函数回调会处理 llm 的回复字段，比如 list 等，传入list，传出 str 的回复。必须是 str。"

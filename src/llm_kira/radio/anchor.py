@@ -13,6 +13,7 @@ from .crawer import UniMatch, raw_content, Duckgo
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from .decomposer import Filter, PromptTool
+from ..client.types import PromptItem, Interaction
 from ..utils.data import Bucket
 
 
@@ -41,7 +42,7 @@ class Multiplexers(object):
 
 class Antennae(ABC):
     @abstractmethod
-    async def run(self, prompt, prompt_raw: str = None, **kwargs) -> List[str]:
+    async def run(self, prompt, prompt_raw: str = None, **kwargs) -> List[Interaction]:
         return []
 
 
@@ -65,7 +66,7 @@ class SearchCraw(Antennae):
 
     @retry(retry=retry_if_exception_type((LookupError)), stop=stop_after_attempt(3),
            wait=wait_exponential(multiplier=1, min=5, max=10), reraise=True)
-    async def run(self, prompt: str, prompt_raw: str = None) -> List[str]:
+    async def run(self, prompt: str, prompt_raw: str = None) -> List[Interaction]:
         if prompt_raw is None:
             prompt_raw = prompt
         if prompt is None:
@@ -84,7 +85,10 @@ class SearchCraw(Antennae):
         if not _content:
             self.__update_index()
             raise LookupError("Not Found")
-        return _content
+        _returner = []
+        for item in _content:
+            _returner.append(Interaction(ask=PromptItem(start="Google", text=item), single=True))
+        return _returner
 
 
 class DuckgoCraw(Antennae):
@@ -95,7 +99,7 @@ class DuckgoCraw(Antennae):
 
     @retry(retry=retry_if_exception_type((LookupError)), stop=stop_after_attempt(3),
            wait=wait_exponential(multiplier=1, min=1, max=5), reraise=True)
-    async def run(self, prompt: str, prompt_raw: str = None) -> List[str]:
+    async def run(self, prompt: str, prompt_raw: str = None) -> List[Interaction]:
         if prompt_raw is None:
             prompt_raw = prompt
         if prompt is None:
@@ -116,4 +120,7 @@ class DuckgoCraw(Antennae):
         _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
         if len(_content) > 3:
             Multiplexers().insert(key=prompt, result=_content)
-        return _content
+        _returner = []
+        for item in _content:
+            _returner.append(Interaction(ask=PromptItem(start="Google", text=item), single=True))
+        return _returner

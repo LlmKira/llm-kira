@@ -4,10 +4,10 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import ast
-import time
 import json
-from typing import Union, Optional, List, Tuple
-from ..client.types import Memory_Flow, MemoryItem
+from typing import Union, Optional, List
+from loguru import logger
+from ..client.types import Interaction
 from ..utils import setting
 from pydantic import BaseModel
 
@@ -216,10 +216,12 @@ class MsgFlow(object):
         消息流存储器
         :param uid: 独立 id ，是一个消息桶
         """
+        if not uid:
+            raise Exception("MsgFlow Miss UID...")
         self.uid = str(uid)
+        self.memory: int = 500
         # 工具数据类型
         self.MsgFlowData = GetDataManager(_redis_config, _db_file)
-        self.memory: int = 500
 
     @staticmethod
     def composing_uid(user_id, chat_id):
@@ -232,60 +234,63 @@ class MsgFlow(object):
         return self.MsgFlowData.setKey(uid, message_streams)
 
     @staticmethod
-    def get_content(memory_flow: Memory_Flow, sign: bool = False) -> Tuple[str, str]:
+    def parse(interaction: Interaction, sign: bool = False) -> List[str]:
         """
-        得到单条消息的内容
+        得到互动的内容
         :param sign: 是否署名
-        :param memory_flow: 消息对象提取内容
+        :param interaction: 消息对象提取内容
         :return: ask,reply
         """
-        _ask_ = None
-        _reply_ = None
-        if isinstance(memory_flow, Memory_Flow):
-            _ask_ = memory_flow.content.ask
-            _reply_ = memory_flow.content.reply
-        if isinstance(memory_flow, dict):
-            _ask_ = memory_flow["content"]["ask"]
-            _reply_ = memory_flow["content"]["reply"]
-        if not sign and ":" in _ask_ and ':' in _reply_:
-            _ask_ = _ask_.split(":", 1)[1]
-            _reply_ = _reply_.split(":", 1)[1]
-        # 自动合并机制
-        if _ask_ == _reply_:
-            _reply_ = ""
-        return _ask_, _reply_
-
-    def saveMsg(self, msg: MemoryItem) -> None:
-        # {"ask": {self._restart_sequence: prompt}, "reply": {self._start_sequence: REPLY[0]}}
-        time_s = int(time.time() * 1000)
-        content = Memory_Flow(content=msg, time=time_s).dict()
-        _message_streams = self._get_uid(self.uid)
-        if "msg" in _message_streams:
-            # 倒序
-            _message_streams["msg"] = sorted(_message_streams["msg"], key=lambda x: x['time'], reverse=True)
-            # 记忆容量重整
-            if len(_message_streams["msg"]) > self.memory:
-                for i in range(len(_message_streams["msg"]) - self.memory + 1):
-                    # 多弹出一个用于腾出容量，不能在前面弹出，会造成无法记忆的情况！
-                    _message_streams["msg"].pop(0)
-            _message_streams["msg"].append(content)
+        _returner = []
+        if sign:
+            _returner.append(interaction.ask.text)
         else:
-            _message_streams["msg"] = [content]
+            _returner.append(interaction.ask.prompt)
+        if not interaction.single:
+            if sign:
+                _returner.append(interaction.reply.text)
+            else:
+                _returner.append(interaction.reply.prompt)
+        return _returner
+
+    def save(self, interaction_flow: List[Interaction], override: bool = False) -> None:
+        # 获取 Json 数据
+        _message_streams = self._get_uid(self.uid)
+        _message = []
+        # 读取前世记忆
+        if "message" in _message_streams:
+            _message = _message_streams["message"]
+            _message = sorted(_message, key=lambda x: x['time'], reverse=True)
+            _message = _message[:int(self.memory)]
+        if override:
+            _message = []
+        # 填充
+        for item in interaction_flow:
+            _message.append(item.dict())
+        # 回存
+        # _message = sorted(_message, key=lambda x: x['time'], reverse=True)
+        _message_streams["message"] = _message
         self._set_uid(self.uid, _message_streams)
 
-    def read(self) -> Optional[List[Memory_Flow]]:
-        message_streams = self._get_uid(self.uid)
-        if "msg" in message_streams:
-            _msg = message_streams["msg"]
-            _msg: List[Memory_Flow]
-            return _msg
-        else:
+    def read(self) -> Optional[List[Interaction]]:
+        _message_streams = self._get_uid(self.uid)
+        if "message" not in _message_streams:
             return []
+        _streams = _message_streams["message"]
+        _returner = []
+        # 倒序
+        _message = sorted(_streams, key=lambda x: x['time'], reverse=True)
+        for item in _streams:
+            try:
+                _returner.append(Interaction(**item))
+            except Exception as error:
+                logger.warning(f"Failed insert {error}")
+        return _returner
 
     def forget(self):
         _message_streams = self._get_uid(self.uid)
-        if "msg" in _message_streams:
-            _message_streams["msg"] = []
+        if "message" in _message_streams:
+            _message_streams["message"] = []
             self._set_uid(self.uid, _message_streams)
         return True
 
