@@ -133,6 +133,8 @@ class SinglePoint(Point):
             if __item.score > 0.5 and __now < token:
                 __now += self.tokenizer(__item.interaction.raw)
                 __returner.extend(__item.interaction.content)
+        # IMPORTANT
+        __returner = list(reversed(__returner))
         return __returner
 
     def run(self) -> List[str]:

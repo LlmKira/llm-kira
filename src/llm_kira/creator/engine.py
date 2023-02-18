@@ -3,6 +3,7 @@
 # @FileName: engine.py
 # @Software: PyCharm
 # @Github    ：sudoskys
+import time
 from typing import List, Union, Tuple
 
 from loguru import logger
@@ -105,8 +106,8 @@ class PromptEngine(object):
 
     def insert_interaction(self, ask: PromptItem, response: Optimizer = None, single: bool = False):
         if not response and not single:
-            raise Exception("NOT Allowed Method")
-        interaction = Interaction(ask=ask, reply=response, single=single)
+            raise Exception("Not Allowed Method")
+        interaction = Interaction(ask=ask, reply=response, single=single, time=time.time() * 1000)
         self.interaction_pool.append(interaction)
 
     def insert_prompt(self, prompt: PromptItem):

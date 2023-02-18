@@ -65,8 +65,6 @@ class ChatBot(object):
 
         # Get
         prompt_index, prompt = self.prompt.build_prompt(predict_tokens=predict_tokens)
-        logger.warning(prompt_index)
-        logger.warning(prompt)
         # Get
         llm_result: LlmReturn = await self.llm.run(
             prompt=prompt,

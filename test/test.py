@@ -81,11 +81,11 @@ async def chat():
                                                   optimizer=Optimizer.SinglePoint,
                                                   )
     # 大型数据对抗测试
-    # promptManager.insert(item=PromptItem(start="Neko", text=random_string(8000)))
-    # promptManager.insert(item=PromptItem(start="Neko", text=random_string(500)))
+    # promptManager.insert_prompt(prompt=PromptItem(start="Neko", text=random_string(8000)))
+    # promptManager.insert_prompt(prompt=PromptItem(start="Neko", text=random_string(500)))
 
     # 多 prompt 对抗测试
-    # promptManager.insert(item=PromptItem(start="Neko", text="喵喵喵"))
+    promptManager.insert_prompt(prompt=PromptItem(start="Neko", text="喵喵喵"))
 
     # 测试
     promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
