@@ -3,7 +3,7 @@
 # @FileName: decomposer.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from ..utils.chat import Utils, Sim
+from ..utils.chat import Utils, Sim, Cut
 
 from .setting import STOP_SENTENCE
 from typing import List, Tuple, Optional
@@ -166,7 +166,7 @@ class Extract(object):
             return []
         # _summary = Utils.textrank_summarization(sentence=_raw_text, ratio=0.5)
         # _summary = self.sumy_extract(url=url, html=_raw_text)
-        _summary = _raw_text
+        _summary = Cut().cut_sentence(_raw_text)
         _return_raw.extend(_summary)
         return _return_raw
 
