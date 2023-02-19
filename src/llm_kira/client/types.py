@@ -32,7 +32,7 @@ class PromptItem(BaseModel):
         return values
 
     @validator('text')
-    def name_check(cls, v):
+    def text_check(cls, v):
         if not v:
             return "None"
         return v

@@ -124,9 +124,6 @@ class PromptEngine(object):
             self.prompt_buffer = []
         return True
 
-    def insert_interaction(self, interaction: Interaction):
-        self.interaction_pool.append(interaction)
-
     def build_interaction(self, ask: PromptItem, response: Optimizer = None, single: bool = False):
         if not response and not single:
             raise Exception("Not Allowed Method")
@@ -135,7 +132,16 @@ class PromptEngine(object):
 
     def insert_knowledge(self, knowledge: Interaction):
         """基础知识参考添加"""
+        if not isinstance(knowledge, Interaction):
+            logger.warning("Knowledge Should Be Interaction Class")
+            knowledge = Interaction(single=True, ask=PromptItem(start="*", text=str(knowledge)))
         self.knowledge_pool.append(knowledge)
+
+    def insert_interaction(self, interaction: Interaction):
+        if not isinstance(interaction, Interaction):
+            logger.warning("interaction Should Be Interaction Class")
+            interaction = Interaction(single=True, ask=PromptItem(start="*", text=str(interaction)))
+        self.interaction_pool.append(interaction)
 
     def build_knowledge(self, ask: PromptItem, response: PromptItem):
         """基础知识参考构建"""
