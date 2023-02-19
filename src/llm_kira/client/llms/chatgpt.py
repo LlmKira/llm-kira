@@ -5,7 +5,6 @@
 # @Github    ：sudoskys
 import math
 import time
-import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 
@@ -59,11 +58,12 @@ class ChatGptParam(LlmBaseParam, BaseModel):
 class ChatGpt(LlmBase):
     """CatGpt"""
 
-    def __init__(self, profile: Conversation,
-                 api_key: Union[str, list] = None,
+    def __init__(self,
+                 profile: Conversation,
                  token_limit: int = 3700,
                  auto_penalty: bool = False,
                  call_func: Callable[[dict, str], Any] = None,
+                 **kwargs
                  ):
         """
         Openai LLM 的方法类集合
@@ -74,17 +74,6 @@ class ChatGpt(LlmBase):
         """
         self.auto_penalty = auto_penalty
         self.profile = profile
-        # if api_key is None:
-        #     api_key = setting.openaiApiKey
-        if isinstance(api_key, list):
-            api_key: list
-            if not api_key:
-                raise RuntimeError("NO KEY")
-            api_key = random.choice(api_key)
-            api_key: str
-        self.__api_key = api_key
-        if not api_key:
-            raise RuntimeError("NO KEY")
         self.__start_sequence = self.profile.start_name
         self.__restart_sequence = self.profile.restart_name
         self.__call_func = call_func
@@ -209,6 +198,7 @@ class ChatGpt(LlmBase):
                   llm_param: ChatGptParam = None,
                   stop_words: list = None,
                   anonymous_user: bool = True,
+                  **kwargs
                   ) -> LlmReturn:
         """
         异步的，得到对话上下文

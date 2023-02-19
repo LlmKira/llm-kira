@@ -83,6 +83,7 @@ class OpenAi(LlmBase):
                  token_limit: int = 3700,
                  auto_penalty: bool = False,
                  call_func: Callable[[dict, str], Any] = None,
+                 **kwargs
                  ):
         """
         Openai LLM 的方法类集合
@@ -234,6 +235,7 @@ class OpenAi(LlmBase):
                   llm_param: OpenAiParam = None,
                   stop_words: list = None,
                   anonymous_user: bool = True,
+                  **kwargs
                   ) -> LlmReturn:
         """
         异步的，得到对话上下文
