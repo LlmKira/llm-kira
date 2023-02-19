@@ -164,8 +164,9 @@ class Extract(object):
         _return_raw = self.trafilatura_extract(html)
         if not _raw_text:
             return []
-        _summary = Utils.textrank_summarization(sentence=_raw_text, ratio=0.5)
+        # _summary = Utils.textrank_summarization(sentence=_raw_text, ratio=0.5)
         # _summary = self.sumy_extract(url=url, html=_raw_text)
+        _summary = _raw_text
         _return_raw.extend(_summary)
         return _return_raw
 
