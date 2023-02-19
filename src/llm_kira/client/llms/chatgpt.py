@@ -21,7 +21,7 @@ from ...utils.data import DataUtils
 from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
 
 
-class OpenAiParam(LlmBaseParam, BaseModel):
+class ChatGptParam(LlmBaseParam, BaseModel):
     model_name: str = "text-davinci-003"
     """Model name to use."""
     temperature: float = 0.8
@@ -177,7 +177,7 @@ class OpenAi(LlmBase):
         _prompt = f"Text:{prompt}\n{task}: "
         llm_result = await self.run(prompt=_prompt,
                                     predict_tokens=predict_tokens,
-                                    llm_param=OpenAiParam(model_name="text-davinci-003"),
+                                    llm_param=ChatGptParam(model_name="text-davinci-003"),
                                     stop_words=["Text:", "\n\n"]
                                     )
         return llm_result
@@ -231,7 +231,7 @@ class OpenAi(LlmBase):
                   prompt: str,
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
-                  llm_param: OpenAiParam = None,
+                  llm_param: ChatGptParam = None,
                   stop_words: list = None,
                   anonymous_user: bool = True,
                   ) -> LlmReturn:
