@@ -4,8 +4,11 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 from .openai import OpenAi, OpenAiParam
+from .chatgpt import ChatGpt, ChatGptParam
 
 __all__ = [
     "OpenAi",
     "OpenAiParam",
+    "ChatGptParam",
+    "ChatGpt",
 ]
