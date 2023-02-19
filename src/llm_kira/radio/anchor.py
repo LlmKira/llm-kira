@@ -85,6 +85,7 @@ class SearchCraw(Antennae):
         if not _content:
             self.__update_index()
             raise LookupError("Not Found")
+        _content = [item for item in _content if item]
         _returner = []
         for item in _content:
             _returner.append(Interaction(ask=PromptItem(start="Google", text=item), single=True))
@@ -115,11 +116,14 @@ class DuckgoCraw(Antennae):
         _content = [f"{i['title']}-{i['body']}\n{i['href']}" for i in _results]
         _link = [f"{i['href']}" for i in _results]
         for item in _link[:3]:
-            _content.extend(await raw_content(url=item, query=prompt))
+            pass
+            # 扩展爬取
+            # _content.extend(await raw_content(url=item, query=prompt))
         _content = Filter().filter(sentences=_content, limit=(0, 300))
         _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
         if len(_content) > 3:
             Multiplexers().insert(key=prompt, result=_content)
+        _content = [item for item in _content if item]
         _returner = []
         for item in _content:
             _returner.append(Interaction(ask=PromptItem(start="Google", text=item), single=True))

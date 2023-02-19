@@ -17,7 +17,7 @@
 """
 import random
 import time
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, root_validator
@@ -58,10 +58,13 @@ class HookRank(BaseModel):
 
 class ThinkEngine(object):
     def __init__(self,
-                 profile: Conversation,
+                 profile: Union[Conversation, int],
                  ):
+        uid = profile
+        if isinstance(profile, Conversation):
+            uid = profile.conversation_id
         self._hook = {}
-        self.bucket = Bucket(uid=profile.conversation_id, area="think_hook")
+        self.bucket = Bucket(uid=uid, area="think_hook")
         _read_hook = self.bucket.get()
         self._hook_pool = HookPool(**_read_hook)
         self.__life_end()
