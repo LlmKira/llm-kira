@@ -153,7 +153,7 @@ class SinglePoint(Point):
         knowledge = build_weight(self.knowledge)
         _knowledge_token_limit = int(self.token_limit * self.reference_ratio)
         _interaction_token_limit = self.token_limit - _knowledge_token_limit
-
+        _key = Utils.tfidf_keywords(prompt.prompt, topK=7)
         _returner = [Interaction(single=True, ask=PromptItem(start="*", text=self.desc))]
 
         # Desc
@@ -166,6 +166,20 @@ class SinglePoint(Point):
             _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
             score = _ask_diff * 100
             item.weight.append(score)
+
+        # knowledge 主题检索
+        full_score = len(_key)
+        if full_score > 4:
+            for item in interaction:
+                score = 0
+                _content = "".join(item.interaction.content)
+                for ir in _key:
+                    if ir in _content:
+                        score += 1
+                _get = (score / full_score) * 100
+                _get = _get if _get < 95 else 50
+                if _get != 0:
+                    item.weight.append(_get)
 
         # interaction attention
         _attention = self.attention if len(interaction) >= self.attention else len(interaction)
@@ -190,9 +204,8 @@ class SinglePoint(Point):
             item.weight.append(score)
 
         # interaction 主题检索
-        _key = Utils.tfidf_keywords(prompt.prompt, topK=5)
         full_score = len(_key)
-        if full_score > 5:
+        if full_score > 4:
             for item in interaction:
                 score = 0
                 _content = "".join(item.interaction.content)
