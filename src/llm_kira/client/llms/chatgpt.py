@@ -8,10 +8,10 @@ import time
 import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
+
 # from loguru import logger
 
 from ...error import RateLimitError, ServiceUnavailableError
-from ...tool import openai as openai_api
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
@@ -19,49 +19,29 @@ from ..llms.base import LlmBase, LlmBaseParam
 from ..types import LlmReturn
 from ...utils.data import DataUtils
 from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
+from ...utils import network
 
 
 class ChatGptParam(LlmBaseParam, BaseModel):
+    api: str
+    """Mew Mew API"""
     model_name: str = "text-davinci-003"
     """Model name to use."""
-    temperature: float = 0.8
-    """What sampling temperature to use."""
     max_tokens: int = 256
     """The maximum number of tokens to generate in the completion.
     -1 returns as many tokens as possible given the prompt and
     the models maximal context size."""
-    top_p: float = 1
-    """Total probability mass of tokens to consider at each step."""
-    frequency_penalty: float = 0
-    """Penalizes repeated tokens according to frequency."""
-    presence_penalty: float = 0
-    """Penalizes repeated tokens."""
-    n: int = 1
-    """How many completions to generate for each prompt."""
-    best_of: int = 1
-    """Generates best_of completions server-side and returns the "best"."""
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    """Holds any model parameters valid for create call not explicitly specified."""
-    batch_size: int = 20
-    """Batch size to use when passing multiple documents to generate."""
     request_timeout: Optional[Union[float, Tuple[float, float]]] = None
     """Timeout for requests to OpenAI completion API. Default is 600 seconds."""
-    logit_bias: Optional[Dict[str, float]] = Field(default_factory=dict)
-    """Adjust the probability of specific tokens being generated."""
+    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    """Holds any model parameters valid for create call not explicitly specified."""
 
     @property
     def _default_params(self) -> Dict[str, Any]:
         """Get the default parameters for calling OpenAI API."""
         normal_params = {
-            "temperature": self.temperature,
             "max_tokens": self.max_tokens,
-            "top_p": self.top_p,
-            "frequency_penalty": self.frequency_penalty,
-            "presence_penalty": self.presence_penalty,
-            "n": self.n,
-            "best_of": self.best_of,
             "request_timeout": self.request_timeout,
-            "logit_bias": self.logit_bias,
         }
         return {**normal_params, **self.model_kwargs}
 
@@ -76,7 +56,8 @@ class ChatGptParam(LlmBaseParam, BaseModel):
         return {**{"model_name": self.model_name}, **self._default_params}
 
 
-class OpenAi(LlmBase):
+class ChatGpt(LlmBase):
+    """CatGpt"""
 
     def __init__(self, profile: Conversation,
                  api_key: Union[str, list] = None,
@@ -122,22 +103,16 @@ class OpenAi(LlmBase):
     @staticmethod
     def parse_response(response) -> list:
         REPLY = []
-        Choice = response.get("choices")
+        Choice = response.get("response")
         if Choice:
-            for item in Choice:
-                _text = item.get("text")
-                REPLY.append(_text)
+            REPLY.append(Choice)
         if not REPLY:
             REPLY = [""]
         return REPLY
 
     @staticmethod
     def parse_usage(response) -> Optional[int]:
-        usage = None
-        usage_dict = response.get("usage")
-        if usage_dict:
-            usage = usage_dict["total_tokens"]
-        return usage
+        return 0
 
     @property
     def _llm_type(self) -> str:
@@ -260,74 +235,27 @@ class OpenAi(LlmBase):
             _request_arg.update(llm_param.invocation_params)
         if validate is None:
             validate = []
-        _request_arg.update(model=str(llm_param.model_name),
-                            prompt=str(prompt),
-                            max_tokens=int(predict_tokens),
-                            user=str(self.profile.get_conversation_hash()),
-                            stop=stop_words[:4],
-                            )
         # Anonymous
         if anonymous_user:
             _request_arg.pop("user", None)
-        # Adjust Penalty
-        """
-        if self.auto_penalty and validate:
-            # Cook
-            _frequency_penalty, _presence_penalty, _temperature = Detect().gpt_tendency_arg(prompt=prompt,
-                                                                                            memory=validate,
-                                                                                            tokenizer=self.tokenizer
-                                                                                            )
-            # Some Update
-            _request_arg.update({
-                "frequency_penalty": float(_frequency_penalty),
-                "presence_penalty": float(_presence_penalty),
-                "temperature": float(_temperature),
-            })
-        """
-        if _request_arg.get("frequency_penalty") == 0:
-            _request_arg.pop("frequency_penalty", None)
-        if _request_arg.get("presence_penalty") == 0:
-            _request_arg.pop("presence_penalty", None)
-
-        # 校准字节参数
-        if not _request_arg.get("logit_bias"):
-            _request_arg["logit_bias"] = {}
-            _request_arg.pop("logit_bias", None)
-
-        # 校准温度和惩罚参数
-        if _request_arg.get("frequency_penalty"):
-            _frequency_penalty = _request_arg["frequency_penalty"]
-            _frequency_penalty = _frequency_penalty if -2.0 < _frequency_penalty else -1.9
-            _frequency_penalty = _frequency_penalty if _frequency_penalty < 2.0 else 1.9
-            _request_arg["frequency_penalty"] = _frequency_penalty
-
-        if _request_arg.get("presence_penalty"):
-            _presence_penalty = _request_arg["presence_penalty"]
-            _presence_penalty = _presence_penalty if -2.0 < _presence_penalty else -1.9
-            _presence_penalty = _presence_penalty if _presence_penalty < 2.0 else 1.9
-            _request_arg["presence_penalty"] = _presence_penalty
-
-        if _request_arg.get("temperature"):
-            _temperature = _request_arg["temperature"]
-            _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
-
-        # 继承重写
-        # openai_client.api_key = self.__api_key
-        # try:
-        #     response = await openai_client.Completion.acreate(**_request_arg)
-        # except openai_client.error.OpenAIError as e:
-        #     if self.__call_func:
-        #         self.__call_func(e.json_body, self.__api_key)
-        #     openai_error_handler(e.code, e.error)
-        #     raise
-        # except Exception as e:
-        #     raise LLMException(e)
-
+        headers = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/json"}
+        _message_arg = {
+            "message": prompt
+        }
         # 自维护 Api 库
-        response = await openai_api.Completion(api_key=self.__api_key, call_func=self.__call_func).create(
-            **_request_arg
-        )
-
+        try:
+            response = await network.request(
+                method="POST",
+                url=_request_arg.get("api") + "/message",
+                data=_message_arg,
+                headers=headers,
+                json_body=True,
+            )
+            _ = response.json()
+        except Exception as e:
+            raise ServiceUnavailableError(f"Server:{e}")
+        if response.status_code != 200:
+            raise ServiceUnavailableError(f"Server:{response.json().get('error')}")
         # Reply
         reply = self.parse_response(response)
         self.profile.update_usage(usage=self.parse_usage(response))
