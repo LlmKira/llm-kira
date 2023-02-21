@@ -90,7 +90,8 @@ class ChatBot(object):
 
         prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.restart_name}:"
         prompt_build = self.llm.resize_sentence(prompt_build, token=_llm_result_limit)
-
+        # ODO
+        # logger.trace(prompt_build)
         # Get
         llm_result: LlmReturn = await self.llm.run(
             prompt=prompt_build,
