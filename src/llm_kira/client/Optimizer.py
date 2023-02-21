@@ -203,7 +203,7 @@ class SinglePoint(Point):
         # Knowledge Search
         # interaction 遗忘函数
         for item in knowledge:
-            item.weight.append(60)
+            item.weight.append(70)
         # 追溯搜索
         # knowledge 相似度检索
         for item in knowledge:
