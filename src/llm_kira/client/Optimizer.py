@@ -216,7 +216,7 @@ class SinglePoint(Point):
 
         # Knowledge Search
         # knowledge 搜索引擎优待函数
-        _attention = self.attention if len(interaction) >= self.attention else len(interaction)
+        _attention = self.attention if len(knowledge) >= self.attention else len(knowledge)
         for i in range(0, _attention):
             interaction[i].weight.append(68)
 
