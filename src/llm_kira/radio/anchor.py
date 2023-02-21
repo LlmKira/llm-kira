@@ -69,7 +69,7 @@ class SearchCraw(Antennae):
         self.index = random.randint(0, self.round - 1)
 
     def __update_index(self):
-        if self.index > self.round - 1:
+        if self.index >= self.round - 1:
             self.index = 0
         else:
             self.index += 1
