@@ -135,9 +135,14 @@ class SinglePoint(Point):
         _weight = _weight if _weight > 12 else 12
         return _weight
 
-    def _filler(self, _message: List[InteractionWeight], token: int) -> Tuple[List[Interaction], int]:
+    def _filler(self,
+                _message: List[InteractionWeight],
+                token: int, sort_by_weight: bool = False
+                ) -> Tuple[List[Interaction], int]:
         __now = 0
         __returner = []
+        if sort_by_weight:
+            _message.sort(key=attrgetter('score'), reverse=True)
         for __item in _message:
             if __item.score > 0.5 and __now < token:
                 __now += self.tokenizer(__item.interaction.raw)
@@ -213,7 +218,7 @@ class SinglePoint(Point):
             item.weight.append(score)
 
         # Fill
-        _optimized, _rest = self._filler(_message=knowledge, token=_knowledge_token_limit)
+        _optimized, _rest = self._filler(_message=knowledge, token=_knowledge_token_limit, sort_by_weight=True)
         _returner.extend(_optimized)
         _forget_all = False
         for item in self.forget_words:

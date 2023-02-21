@@ -107,6 +107,7 @@ async def chat():
     # 多 prompt 对抗测试
     promptManager.insert_prompt(prompt=PromptItem(start="Neko", text="喵喵喵"))
     promptManager.insert_interaction(Interaction(single=True, ask=PromptItem(start="alice", text="MewMewMewMew")))
+    promptManager.insert_knowledge(Interaction(single=True, ask=PromptItem(start="alice", text="MewMewMewMew")))
     # 测试
     promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
     response = await chat_client.predict(
