@@ -3,15 +3,13 @@
 # @FileName: decomposer.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from ..utils.chat import Utils, Sim, Cut
-
-from .setting import STOP_SENTENCE
-from typing import List, Tuple, Optional
-from loguru import logger
-
 import re
+from loguru import logger
+from typing import List, Tuple, Optional
 from goose3 import Goose
 from inscriptis import get_text
+from ..utils.chat import Utils, Sim, Cut
+from .setting import STOP_SENTENCE
 
 
 class Filter(object):
@@ -135,10 +133,12 @@ class Extract(object):
             _return_raw.append(meta)
         return _return_raw
 
+    """
     @staticmethod
     def trafilatura_extract(downloaded):
         import trafilatura
         return Extract.chinese_sentence_cut(trafilatura.extract(downloaded))
+    """
 
     """
     @staticmethod
@@ -171,14 +171,23 @@ class Extract(object):
             return text
 
     def process_html(self, url, html) -> List[str]:
+        """
+        负责切分提取网页内容，本来是 Sumy 库负责的，临时改成正则
+        # TODO
+        """
         _return_raw = []
         _return_raw.extend(self.goose_extract(html))
         _raw_text = self.inscriptis_extract(html)
-        _return_raw = self.trafilatura_extract(html)
+
+        # !!!WARNING!!! AGPL 3.0 API!!!
+        # _return_raw = self.trafilatura_extract(html)
+
         if not _raw_text:
             return []
+
         # _summary = Utils.textrank_summarization(sentence=_raw_text, ratio=0.5)
         # _summary = self.sumy_extract(url=url, html=_raw_text)
+
         _summary = Cut().cut_sentence(_raw_text)
         _return_raw.extend(_summary)
         return _return_raw
@@ -281,7 +290,8 @@ class PromptTool(object):
         # 二倍问题过滤测量
         _del_keys = []
         for k, i in material.items():
-            if len(k) < len(Filter.url_filter(prompt[:15])) * 2.2:
+            # 调整对于标题的惩罚参数
+            if len(k) < len(Filter.url_filter(prompt[:20])) * 2.5:
                 _del_keys.append(k)
         for ks in _del_keys:
             material.pop(ks)

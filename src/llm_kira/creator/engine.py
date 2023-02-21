@@ -132,13 +132,13 @@ class PromptEngine(object):
 
     def insert_knowledge(self, knowledge: Interaction):
         """基础知识参考添加"""
-        if not isinstance(knowledge, Interaction):
+        if isinstance(knowledge, str):
             logger.warning("Knowledge Should Be Interaction Class")
             knowledge = Interaction(single=True, ask=PromptItem(start="*", text=str(knowledge)))
         self.knowledge_pool.append(knowledge)
 
     def insert_interaction(self, interaction: Interaction):
-        if not isinstance(interaction, Interaction):
+        if isinstance(interaction, str):
             logger.warning("interaction Should Be Interaction Class")
             interaction = Interaction(single=True, ask=PromptItem(start="*", text=str(interaction)))
         self.interaction_pool.append(interaction)
@@ -152,18 +152,24 @@ class PromptEngine(object):
         """基础Prompt Buffer添加方法"""
         return self.prompt_buffer.append(prompt)
 
-    async def build_skeleton(self, skeleton: Antennae, query: PromptItem, llm_task: str = None) -> List[Interaction]:
+    async def build_skeleton(self,
+                             skeleton: Antennae,
+                             query: Union[PromptItem, str],
+                             llm_task: str = None) -> List[Interaction]:
         """
         异步的外骨骼，用于启动第三方接口提供的知识参考
         :return 列表类型的互动数据
         """
+        prompt = query
+        if not isinstance(query, str):
+            prompt = query.text
         if llm_task:
             llm_result = await self.llm.task_context(task=llm_task,
                                                      predict_tokens=30,
-                                                     prompt=query.text)
-            query.text = llm_result.reply[0]
+                                                     prompt=prompt)
+            prompt = llm_result.reply[0]
         knowledge: List[Interaction]
-        knowledge = await skeleton.run(prompt=query)
+        knowledge = await skeleton.run(prompt=prompt)
         return knowledge
 
     def build_context(self, prompt: PromptItem, predict_tokens) -> List[Interaction]:

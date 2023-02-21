@@ -9,10 +9,10 @@ from typing import List, Union
 
 from llm_kira.utils.chat import Sim
 
-from .crawer import UniMatch, raw_content, Duckgo
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from .decomposer import Filter, PromptTool
+from .crawer import raw_content, Duckgo
 from ..client.types import PromptItem, Interaction
 from ..utils.data import Bucket
 
@@ -95,7 +95,7 @@ class SearchCraw(Antennae):
             self.__update_index()
             # raise LookupError("Not Found")
         _content = [item for item in _content if item]
-        _returner = warp_interaction(start="Google", content=_content)
+        _returner = warp_interaction(start="Tips", content=_content)
         return _returner
 
 
@@ -129,5 +129,5 @@ class DuckgoCraw(Antennae):
         _content = [item for item in _content if item]
         _returner = []
         for item in _content:
-            _returner.append(Interaction(ask=PromptItem(start="Google", text=item), single=True))
+            _returner.append(Interaction(ask=PromptItem(start="Tip", text=item), single=True))
         return _returner

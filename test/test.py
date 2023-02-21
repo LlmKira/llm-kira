@@ -7,6 +7,8 @@ import asyncio
 import random
 import time
 from typing import List
+
+from llm_kira.radio.anchor import SearchCraw
 from loguru import logger
 from llm_kira import radio
 
@@ -105,11 +107,22 @@ async def chat():
     # promptManager.insert_prompt(prompt=PromptItem(start="Neko", text=random_string(500)))
 
     # 多 prompt 对抗测试
+    testPrompt = input("TestPrompt:")
     promptManager.insert_prompt(prompt=PromptItem(start="Neko", text="喵喵喵"))
     promptManager.insert_interaction(Interaction(single=True, ask=PromptItem(start="alice", text="MewMewMewMew")))
+    _result = await promptManager.build_skeleton(query=testPrompt,
+                                                 llm_task="Summary Text" if len(
+                                                     testPrompt) > 20 else None,
+                                                 skeleton=random.choice([SearchCraw(
+                                                     deacon=["https://www.bing.com/search?q={}&form=QBLH"])])
+                                                 )
+    for item in _result:
+        logger.trace(item.content)
+        promptManager.insert_knowledge(knowledge=item)
+
     promptManager.insert_knowledge(Interaction(single=True, ask=PromptItem(start="alice", text="MewMewMewMew")))
     # 测试
-    promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=input("TestPrompt:")))
+    promptManager.insert_prompt(prompt=PromptItem(start=conversation.start_name, text=testPrompt))
     response = await chat_client.predict(
         prompt=promptManager,
         llm_param=OpenAiParam(model_name="text-davinci-003", temperature=0.8, presence_penalty=0.1, n=1, best_of=1),

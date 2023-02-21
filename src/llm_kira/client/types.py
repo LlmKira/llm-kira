@@ -58,7 +58,7 @@ class Interaction(BaseModel):
 
 class InteractionWeight(BaseModel):
     interaction: Interaction
-    weight: List[int] = []
+    weight: List[float] = []
 
     @property
     def score(self):
