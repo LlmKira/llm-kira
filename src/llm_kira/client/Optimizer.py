@@ -201,9 +201,6 @@ class SinglePoint(Point):
                     item.weight.append(_get)
 
         # Knowledge Search
-        # interaction 遗忘函数
-        for item in knowledge:
-            item.weight.append(70)
         # 追溯搜索
         # knowledge 相似度检索
         for item in knowledge:
@@ -214,7 +211,7 @@ class SinglePoint(Point):
                 _come_diff = Sim.cosion_similarity(pre=_old, aft=_content)
             _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
             _ask_diff = _ask_diff if _ask_diff > _come_diff else _come_diff
-            score = _ask_diff * 100
+            score = _ask_diff * 100 + 50
             item.weight.append(score)
 
         # Fill
