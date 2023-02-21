@@ -8,7 +8,7 @@
 """
 import math
 from operator import attrgetter
-from typing import List
+from typing import List, Tuple
 import datetime
 from .types import Interaction, PromptItem, InteractionWeight
 from ..utils.chat import Utils, Sim
@@ -112,7 +112,7 @@ class SinglePoint(Point):
                  attention: int = 3,
                  interaction: List[Interaction] = None,
                  knowledge: List[Interaction] = None,
-                 reference_ratio: float = 0.5,
+                 reference_ratio: float = 0.2,
                  token_limit: int = 2000,
                  forget_words: List[str] = None,
                  ):
@@ -135,7 +135,7 @@ class SinglePoint(Point):
         _weight = _weight if _weight > 12 else 12
         return _weight
 
-    def _filler(self, _message: List[InteractionWeight], token: int) -> List[Interaction]:
+    def _filler(self, _message: List[InteractionWeight], token: int) -> Tuple[List[Interaction], int]:
         __now = 0
         __returner = []
         for __item in _message:
@@ -143,7 +143,7 @@ class SinglePoint(Point):
                 __now += self.tokenizer(__item.interaction.raw)
                 __returner.append(__item.interaction)
         __returner = list(reversed(__returner))
-        return __returner
+        return __returner, token - __now
 
     def run(self) -> List[Interaction]:
         # 单条消息的内容 {"ask": self._restart_sequence+prompt, "reply": self._start_sequence+REPLY[0]}
@@ -213,11 +213,13 @@ class SinglePoint(Point):
             item.weight.append(score)
 
         # Fill
-        _returner.extend(self._filler(_message=knowledge, token=_knowledge_token_limit))
+        _optimized, _rest = self._filler(_message=knowledge, token=_knowledge_token_limit)
+        _returner.extend(_optimized)
         _forget_all = False
         for item in self.forget_words:
             if item in prompt.text:
                 _forget_all = True
         if not _forget_all:
-            _returner.extend(self._filler(_message=interaction, token=_interaction_token_limit))
+            _optimized2, _rest = self._filler(_message=interaction, token=_interaction_token_limit + _rest)
+            _returner.extend(_optimized2)
         return _returner
