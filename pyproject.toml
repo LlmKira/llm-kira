@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llm_kira"
-version = "0.6.4"
+version = "0.6.41"
 description = "chatbot client for llm"
 authors = ["sudoskys <coldlando@hotmail.com>"]
 maintainers = [
