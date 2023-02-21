@@ -196,6 +196,9 @@ class SinglePoint(Point):
                     item.weight.append(_get)
 
         # Knowledge Search
+        # interaction 遗忘函数
+        for item in knowledge:
+            item.weight.append(45)
         # 追溯搜索
         # knowledge 相似度检索
         for item in knowledge:
