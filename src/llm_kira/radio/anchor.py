@@ -17,16 +17,26 @@ from ..client.types import PromptItem, Interaction
 from ..utils.data import Bucket
 
 
+def warp_interaction(start: str = "Google", content: List[str] = None):
+    _returner = []
+    for item in content:
+        if isinstance(item, str):
+            _returner.append(Interaction(ask=PromptItem(start=start, text=item), single=True))
+        elif isinstance(item, Interaction):
+            _returner.append(item)
+    return _returner
+
+
 class Multiplexers(object):
     def __init__(self):
         self.bucket = Bucket(uid=10086)
 
-    def index(self, prompt: str, limit: int = 10):
+    def index(self, prompt: str, limit: int = 10) -> List[str]:
         _data = self.bucket.get()
         _return = []
         for key, item in _data.items():
             _cos_sim = Sim.cosion_similarity(aft=prompt, pre=str(key))
-            if _cos_sim > 0.75:
+            if 0.80 < _cos_sim < 0.96:
                 _return.extend(item)
             if len(_return) > limit:
                 return _return
@@ -73,22 +83,19 @@ class SearchCraw(Antennae):
             prompt = prompt_raw
         if not prompt:
             return []
-        _index = Multiplexers().index(prompt=prompt)
-        if len(_index) > 3:
-            return _index
-        url = self.deacon[self.index]
-        _content = await raw_content(url=url, query=prompt)
-        _content = Filter().filter(sentences=_content, limit=(0, 200))
+        _content = Multiplexers().index(prompt=prompt)
+        if len(_content) < 3:
+            url = self.deacon[self.index]
+            _content = await raw_content(url=url, query=prompt, raise_empty=False)
+        _content = Filter().filter(sentences=_content, limit=(0, 250))
         _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
         if len(_content) > 3:
             Multiplexers().insert(key=prompt, result=_content)
         if not _content:
             self.__update_index()
-            raise LookupError("Not Found")
+            # raise LookupError("Not Found")
         _content = [item for item in _content if item]
-        _returner = []
-        for item in _content:
-            _returner.append(Interaction(ask=PromptItem(start="Google", text=item), single=True))
+        _returner = warp_interaction(start="Google", content=_content)
         return _returner
 
 
@@ -107,18 +114,14 @@ class DuckgoCraw(Antennae):
             prompt = prompt_raw
         if not prompt:
             return []
-        _index = Multiplexers().index(prompt=prompt)
-        if len(_index) > 3:
-            return _index
-        _results = await Duckgo().get_result(keywords=prompt)
-        if not _results:
-            return []
-        _content = [f"{i['title']}-{i['body']}\n{i['href']}" for i in _results]
-        _link = [f"{i['href']}" for i in _results]
-        for item in _link[:3]:
-            pass
-            # 扩展爬取
-            # _content.extend(await raw_content(url=item, query=prompt))
+        _content = Multiplexers().index(prompt=prompt)
+        if len(_content) < 3:
+            _results = await Duckgo().get_result(keywords=prompt)
+            if _results:
+                _content = [f"{i['title']}-{i['body']}\n{i['href']}" for i in _results]
+                _link = [f"{i['href']}" for i in _results]
+                # for item in _link[:3]:
+                # ### _content.extend(await raw_content(url=item, query=prompt))
         _content = Filter().filter(sentences=_content, limit=(0, 300))
         _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
         if len(_content) > 3:

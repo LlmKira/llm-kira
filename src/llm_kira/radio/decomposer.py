@@ -16,6 +16,19 @@ from inscriptis import get_text
 
 class Filter(object):
     @staticmethod
+    def url_filter(sentence):
+        pas = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+        _link = re.findall(pas, sentence)
+        if _link:
+            for i in _link:
+                sentence = sentence.replace(i, "")
+        _link = re.findall("(?:[\w-]+\.)+[\w-]+", sentence)
+        if _link:
+            for i in _link:
+                sentence = sentence.replace(i, "")
+        return sentence
+
+    @staticmethod
     def english_sentence_cut(text) -> list:
         list_ = list()
         for s_str in text.split('.'):
@@ -245,7 +258,7 @@ class PromptTool(object):
                 _pre = material[i]
                 _afe = material[i + 1]
                 sim = Sim.cosion_similarity(pre=_pre, aft=_afe)
-                if sim > 0.7:
+                if sim > 0.9:
                     _remo = _afe if len(_afe) > len(_pre) else _pre
                     # 移除过于相似的
                     material.remove(_remo)
@@ -254,25 +267,42 @@ class PromptTool(object):
                 break
 
         # 去重排序+删除无关
-        material_ = {item: -1 for item in material}
+        material_ = {item: 1 for item in material}
         material = list(material_.keys())
         _top_table = {}
         for item in material:
             _top_table[item] = Sim.cosion_similarity(pre=prompt, aft=item)
-        material = {k: v for k, v in _top_table.items() if v > 0.15}
+        material = {k: v for k, v in _top_table.items() if v > 0.23}
+
         # 搜索引擎比相似度算法靠谱所以注释掉了
         # material = OrderedDict(sorted(material.items(), key=lambda t: t[1]))
         # logger.trace(material)
 
+        # 二倍问题过滤测量
+        _del_keys = []
+        for k, i in material.items():
+            if len(k) < len(Filter.url_filter(prompt[:15])) * 2.2:
+                _del_keys.append(k)
+        for ks in _del_keys:
+            material.pop(ks)
+
+        # 编辑计算
+        _del_keys = []
+        for k, i in material.items():
+            if Sim.edit_similarity(pre=k, aft=prompt) < 5:
+                _del_keys.append(k)
+        for ks in _del_keys:
+            material.pop(ks)
+
         # 关联度指数计算
-        _key = Utils.tfidf_keywords(prompt, topK=7)
+        _key = Utils.tfidf_keywords(prompt, topK=10)
         _score = 0
         _del_keys = []
         for k, i in material.items():
             for ir in _key:
                 if ir in k:
                     _score += 1
-            if _score / len(_key) < 0.3:
+            if _score / len(_key) < 0.2:
                 _del_keys.append(k)
         for k in _del_keys:
             material.pop(k)

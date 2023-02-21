@@ -7,6 +7,8 @@ import asyncio
 import random
 import time
 from typing import List
+from loguru import logger
+from llm_kira import radio
 
 # 最小单元测试
 import src.llm_kira as llm_kira
@@ -16,6 +18,12 @@ from src.llm_kira.client import Optimizer
 from src.llm_kira.client.llms.openai import OpenAiParam
 from src.llm_kira.client.types import PromptItem, Interaction
 
+import sys
+
+logger.remove()
+handler_id = logger.add(sys.stderr, level="TRACE")
+
+#
 openaiApiKey = setting.ApiKey
 openaiApiKey: List[str]
 print(llm_kira.RedisConfig())
@@ -182,10 +190,25 @@ async def GPT2():
         print(response)
 
 
+async def Web():
+    _sentence_list = [
+        "KimmyXYC 的信息"
+    ]
+    from llm_kira.radio.anchor import SearchCraw, DuckgoCraw
+    for item in _sentence_list:
+        logger.trace(item)
+        response = await SearchCraw(deacon=["https://www.bing.com/search?q={}&form=QBLH"]).run(prompt=item,
+                                                                                               prompt_raw=item)
+        # response = DuckgoCraw().run(prompt=item, prompt_raw=item)
+        for items in response:
+            # logger.info(type(items))
+            logger.info(items.ask.prompt)
+
+
 t1 = time.time()
 # asyncio.run(completion())
 # asyncio.run(mood_hook())
-asyncio.run(chat())
+asyncio.run(Web())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())
@@ -195,4 +218,4 @@ asyncio.run(chat())
 # print(int(1.2))
 t2 = time.time()
 
-print(t2 - t1)
+print(f"Run Cost:{t2 - t1}")
