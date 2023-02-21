@@ -46,7 +46,7 @@ class UniMatch(object):
             "Sec-Fetch-Mode": "navigate",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0"
         }
-        html = await network.request("GET", url=_url, headers=headers, timeout=5)
+        html = await network.request("GET", url=_url, headers=headers, timeout=5, follow_redirects=True)
         if html.status_code == 200:
             return html.text
         else:

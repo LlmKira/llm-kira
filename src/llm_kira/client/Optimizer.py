@@ -7,7 +7,6 @@
 优化器
 """
 import math
-import time
 from operator import attrgetter
 from typing import List
 import datetime
@@ -155,36 +154,15 @@ class SinglePoint(Point):
         _interaction_token_limit = self.token_limit - _knowledge_token_limit
         _key = Utils.tfidf_keywords(prompt.prompt, topK=7)
         _returner = [Interaction(single=True, ask=PromptItem(start="*", text=self.desc))]
-
+        _old_prompt = interaction[:1]
         # Desc
         if self.tokenizer(self.desc) > self.token_limit:
             return _returner
 
-        # knowledge 相似度检索
-        for item in knowledge:
-            _content = "".join(item.interaction.content)
-            _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
-            score = _ask_diff * 100
-            item.weight.append(score)
-
-        # knowledge 主题检索
-        full_score = len(_key)
-        if full_score > 4:
-            for item in interaction:
-                score = 0
-                _content = "".join(item.interaction.content)
-                for ir in _key:
-                    if ir in _content:
-                        score += 1
-                _get = (score / full_score) * 100
-                _get = _get if _get < 95 else 50
-                if _get != 0:
-                    item.weight.append(_get)
-
         # interaction attention
         _attention = self.attention if len(interaction) >= self.attention else len(interaction)
         for ir in range(0, _attention):
-            interaction[ir].weight.append(77)
+            interaction[ir].weight.append(70)
 
         # interaction 遗忘函数
         for i in range(0, len(interaction)):
@@ -216,6 +194,20 @@ class SinglePoint(Point):
                 _get = _get if _get < 95 else 50
                 if _get != 0:
                     item.weight.append(_get)
+
+        # Knowledge Search
+        # 追溯搜索
+        # knowledge 相似度检索
+        for item in knowledge:
+            _content = "".join(item.interaction.content)
+            _come_diff = 0
+            if _old_prompt:
+                _old = _old_prompt[0].interaction.raw
+                _come_diff = Sim.cosion_similarity(pre=_old, aft=_content)
+            _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
+            _ask_diff = _ask_diff if _ask_diff > _come_diff else _come_diff
+            score = _ask_diff * 100
+            item.weight.append(score)
 
         # Fill
         _returner.extend(self._filler(_message=knowledge, token=_knowledge_token_limit))
