@@ -65,14 +65,6 @@ class SearchCraw(Antennae):
                       "https://www.google.com/search?q={}&source=hp&"
                       ]
         self.deacon = deacon
-        self.round = len(deacon)
-        self.index = random.randint(0, self.round - 1)
-
-    def __update_index(self):
-        if self.index >= self.round - 1:
-            self.index = 0
-        else:
-            self.index += 1
 
     @retry(retry=retry_if_exception_type((LookupError)), stop=stop_after_attempt(3),
            wait=wait_exponential(multiplier=1, min=5, max=10), reraise=True)
@@ -85,15 +77,12 @@ class SearchCraw(Antennae):
             return []
         _content = Multiplexers().index(prompt=prompt)
         if len(_content) < 3:
-            url = self.deacon[self.index]
+            url = random.choice(self.deacon)
             _content = await raw_content(url=url, query=prompt, raise_empty=False)
         _content = Filter().filter(sentences=_content, limit=(0, 250))
         _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
         if len(_content) > 3:
             Multiplexers().insert(key=prompt, result=_content)
-        if not _content:
-            self.__update_index()
-            # raise LookupError("Not Found")
         _content = [item for item in _content if item]
         _returner = warp_interaction(start="Tips", content=_content)
         return _returner
