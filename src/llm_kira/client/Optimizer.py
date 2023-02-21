@@ -211,7 +211,7 @@ class SinglePoint(Point):
                 _come_diff = Sim.cosion_similarity(pre=_old, aft=_content)
             _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
             _ask_diff = _ask_diff if _ask_diff > _come_diff else _come_diff
-            score = _ask_diff * 100 + 50
+            score = _ask_diff * 100 + 49
             item.weight.append(score)
 
         # Fill
