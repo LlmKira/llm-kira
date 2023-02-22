@@ -4,20 +4,30 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import re
-import random
+import tiktoken
 from typing import Union, Callable, List
 
-from llm_kira.error import LLMException
+# Client
 from .data import singleton
-from ..client.text_analysis_tools.api.keywords.tfidf import TfidfKeywords
-from ..client.text_analysis_tools.api.sentiment.sentiment import SentimentAnalysis
-from ..client.text_analysis_tools.api.summarization.textrank_summarization import TextRankSummarization
-from ..client.text_analysis_tools.api.summarization.tfidf_summarization import TfidfSummarization
-from ..client.text_analysis_tools.api.text_similarity.simhash import SimHashSimilarity
-from ..client.text_analysis_tools.api.text_similarity.cosion import CosionSimilarity
-from ..client.text_analysis_tools.api.text_similarity.edit import EditSimilarity
-from ..client.text_analysis_tools.api.keyphrase.keyphrase import KeyPhraseExtraction
-import tiktoken
+from .api.keywords.tfidf import TfidfKeywords
+from .api.sentiment.sentiment import SentimentAnalysis
+from .api.summarization.textrank_summarization import TextRankSummarization
+from .api.summarization.tfidf_summarization import TfidfSummarization
+from .api.text_similarity.simhash import SimHashSimilarity
+from .api.text_similarity.cosion import CosionSimilarity
+from .api.text_similarity.edit import EditSimilarity
+from .api.keyphrase.keyphrase import KeyPhraseExtraction
+
+#
+from typing import List
+
+import jieba
+import numpy as np
+# from sklearn import feature_extraction
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.cluster import Birch
+from pydantic import BaseModel
 
 gpt_tokenizer = tiktoken.get_encoding("gpt2")
 
@@ -199,7 +209,7 @@ class Utils(object):
 
 
 @singleton
-class SimilarityUtils(object):
+class SimilarityModel(object):
     def __init__(self):
         from similarities import Similarity
         self.SimilarityModel = Similarity(
@@ -316,20 +326,111 @@ class Cut(object):
             return [sentence]
         return _reply_list
 
-    def cut_ai_prompt(self, prompt: str) -> list:
-        """
-        切薄负载机
-        :param prompt:
-        :return:
-        """
-        _some = prompt.split(":", 1)
-        _head = ""
-        if len(_some) > 1:
-            _head = f"{_some[0]}:"
-            prompt = _some[1]
-        _reply = self.cut_sentence(prompt)
-        _prompt_list = []
-        for item in _reply:
-            _prompt_list.append(f"{_head}{item.strip()}")
-        _prompt_list = list(filter(None, _prompt_list))
-        return _prompt_list
+
+class Cluster(object):
+    def __init__(self):
+        self.weight = None
+        self.cluster = None
+        self.title_dict: dict = {}
+
+    def init(self, sentence_list):
+        # corpus = [] #文档预料 空格连接
+        corpus = []
+        # f_write = open("jieba_result.dat","w")
+        self.title_dict = {}
+        index = 0
+        for line in sentence_list:
+            title = line.strip()
+            self.title_dict[index] = title
+            output = ' '.join(['%s' % x for x in list(jieba.cut(title, cut_all=False))]).encode('utf-8')  # 空格拼接
+            # print(list(list(jieba.cut(title, cut_all=False))))
+            index += 1
+            corpus.append(output.strip())
+        # 将文本中的词语转换为词频矩阵 矩阵元素a[i][j] 表示j词在i类文本下的词频
+        _vectorizer = CountVectorizer()
+        # 该类会统计每个词语的tf-idf权值
+        transformer = TfidfTransformer()
+        # 第一个fit_transform是计算tf-idf 第二个fit_transform是将文本转为词频矩阵
+        tfidf = transformer.fit_transform(_vectorizer.fit_transform(corpus))
+        # 获取词袋模型中的所有词语
+        word = _vectorizer.get_feature_names_out()
+        # 将tf-idf矩阵抽取出来，元素w[i][j]表示j词在i类文本中的tf-idf权重
+        self.weight = tfidf.toarray()
+
+    def birch_cluster(self, sentence_list: List[str], threshold: float = 0.6) -> None:
+        self.init(sentence_list=sentence_list)
+        self.cluster = Birch(threshold=threshold, n_clusters=None)
+        self.cluster.fit_predict(self.weight)
+
+    def build(self):
+        # self.cluster.labels_ 为聚类后corpus中文本index 对应 类别 {index: 类别} 类别值int值 相同值代表同一类
+        # cluster_dict key为Birch聚类后的每个类，value为 title对应的index
+        cluster_dict = {}
+        for index, value in enumerate(self.cluster.labels_):
+            if value not in cluster_dict:
+                cluster_dict[value] = [index]
+            else:
+                cluster_dict[value].append(index)
+        # print("-----before cluster Birch count title:", len(self.title_dict))
+        # result_dict key为Birch聚类后距离中心点最近的title，value为sum_similar求和
+        result_dict = {}
+        for _index in cluster_dict.values():
+            latest_index = _index[0]
+            similar_num = len(_index)
+            if len(_index) >= 2:
+                min_s = np.sqrt(np.sum(np.square(
+                    self.weight[_index[0]] - self.cluster.subcluster_centers_[self.cluster.labels_[_index[0]]])))
+                for index in _index:
+                    s = np.sqrt(np.sum(
+                        np.square(self.weight[index] - self.cluster.subcluster_centers_[self.cluster.labels_[index]])))
+                    if s < min_s:
+                        min_s = s
+                        latest_index = index
+            title = self.title_dict[latest_index]
+            result_dict[title] = similar_num
+        # print("-----after cluster Birch count title:", len(result_dict))
+        return result_dict
+
+
+class DeEmphasis(object):
+    @staticmethod
+    def by_tfidf(sentence_list: List[str], threshold: float = 0.6):
+        if not sentence_list:
+            return []
+        _c = Cluster()
+        _c.birch_cluster(sentence_list=sentence_list, threshold=threshold)
+        return list(_c.build().keys())
+
+    @staticmethod
+    def by_sim(sentence_list: List[str]):
+        material = sentence_list
+        # 双匹配去重
+        while len(material) > 2:
+            prev_len = len(material)
+            _pre = material[0]
+            _afe = material[1]
+            sim = Sim.simhash_similarity(pre=_pre, aft=_afe)
+            if sim < 12:
+                _remo = _afe if len(_afe) > len(_pre) else _pre
+                # 移除过于相似的
+                material.remove(_remo)
+            if len(material) == prev_len:
+                break
+
+        while len(material) > 2:
+            prev_len = len(material)
+            material_len = len(material)
+            for i in range(0, len(material), 2):
+                if i + 1 >= material_len:
+                    continue
+                _pre = material[i]
+                _afe = material[i + 1]
+                sim = Sim.cosion_similarity(pre=_pre, aft=_afe)
+                if sim > 0.9:
+                    _remo = _afe if len(_afe) > len(_pre) else _pre
+                    # 移除过于相似的
+                    material.remove(_remo)
+                    material_len = material_len - 1
+            if len(material) == prev_len:
+                break
+        return material

@@ -11,19 +11,24 @@ from llm_kira.utils.chat import Sim
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from .decomposer import Filter, PromptTool
+from .decomposer import Filter, NlpUtils
 from .crawer import raw_content, Duckgo
 from ..client.types import PromptItem, Interaction
 from ..utils.data import Bucket
 
 
-def warp_interaction(start: str = "Google", content: List[str] = None):
+def warp_interaction(start: Union[str, bool] = "Google", content: List[str] = None):
     _returner = []
+    _index = 0
     for item in content:
+        _start = f"[^{_index}]"
+        if isinstance(start, str):
+            _start = start
         if isinstance(item, str):
-            _returner.append(Interaction(ask=PromptItem(start=start, text=item), single=True))
+            _returner.append(Interaction(ask=PromptItem(start=_start, text=item), single=True))
         elif isinstance(item, Interaction):
             _returner.append(item)
+        _index += 1
     return _returner
 
 
@@ -36,7 +41,8 @@ class Multiplexers(object):
         _return = []
         for key, item in _data.items():
             _cos_sim = Sim.cosion_similarity(aft=prompt, pre=str(key))
-            if 0.80 < _cos_sim < 0.96:
+            _len = 0.3 * len(prompt) < len(str(key)) < 7 * len(prompt)
+            if 0.86 < _cos_sim and _len:
                 _return.extend(item)
             if len(_return) > limit:
                 return _return
@@ -59,12 +65,14 @@ class Antennae(ABC):
 class SearchCraw(Antennae):
     def __init__(self,
                  deacon: List[str] = None,
+                 start_name: str = None
                  ):
         if not deacon:
             deacon = ["https://www.bing.com/search?q={}&form=QBLH",
                       "https://www.google.com/search?q={}&source=hp&"
                       ]
         self.deacon = deacon
+        self.start_name = start_name
 
     @retry(retry=retry_if_exception_type((LookupError)), stop=stop_after_attempt(3),
            wait=wait_exponential(multiplier=1, min=5, max=10), reraise=True)
@@ -79,20 +87,22 @@ class SearchCraw(Antennae):
         if len(_content) < 3:
             url = random.choice(self.deacon)
             _content = await raw_content(url=url, query=prompt, raise_empty=False)
-        _content = Filter().filter(sentences=_content, limit=(0, 250))
-        _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
+        _content = Filter().filter(sentences=_content, limit=(0, 300), filter_url=True)
+        _content = NlpUtils.compression(prompt=prompt_raw, material=_content)
         if len(_content) > 3:
             Multiplexers().insert(key=prompt, result=_content)
         _content = [item for item in _content if item]
-        _returner = warp_interaction(start="Tips", content=_content)
+        _returner = warp_interaction(start=self.start_name, content=_content)
         return _returner
 
 
 class DuckgoCraw(Antennae):
     def __init__(self,
                  deacon: List[str] = None,
+                 start_name: str = None
                  ):
         self.deacon = deacon
+        self.start_name = start_name
 
     @retry(retry=retry_if_exception_type((LookupError)), stop=stop_after_attempt(3),
            wait=wait_exponential(multiplier=1, min=1, max=5), reraise=True)
@@ -111,12 +121,10 @@ class DuckgoCraw(Antennae):
                 _link = [f"{i['href']}" for i in _results]
                 # for item in _link[:3]:
                 # ### _content.extend(await raw_content(url=item, query=prompt))
-        _content = Filter().filter(sentences=_content, limit=(0, 300))
-        _content = PromptTool.nlp_filter_list(prompt=prompt_raw, material=_content)
+        _content = Filter().filter(sentences=_content, limit=(0, 300), filter_url=False)
+        _content = NlpUtils.compression(prompt=prompt_raw, material=_content)
         if len(_content) > 3:
             Multiplexers().insert(key=prompt, result=_content)
         _content = [item for item in _content if item]
-        _returner = []
-        for item in _content:
-            _returner.append(Interaction(ask=PromptItem(start="Tip", text=item), single=True))
+        _returner = warp_interaction(start=self.start_name, content=_content)
         return _returner

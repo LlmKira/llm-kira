@@ -116,9 +116,12 @@ async def chat():
                                                  skeleton=random.choice([SearchCraw(
                                                      deacon=["https://www.bing.com/search?q={}&form=QBLH"])])
                                                  )
+    _index = 1
     for item in _result:
         logger.trace(item.content)
+        item.ask.start = f"[{_index}]"
         promptManager.insert_knowledge(knowledge=item)
+        _index += 1
 
     promptManager.insert_knowledge(Interaction(single=True, ask=PromptItem(start="alice", text="MewMewMewMew")))
     # 测试
@@ -205,8 +208,12 @@ async def GPT2():
 
 
 async def Web():
+    # 一阶线性微分方程的条件？
+    # 什么是线性定常系统？
+    # mysql中regexp的用法有哪些
+    #
     _sentence_list = [
-        "KimmyXYC 的信息"
+        "什么是线性定常系统？"
     ]
     from llm_kira.radio.anchor import SearchCraw, DuckgoCraw
     for item in _sentence_list:

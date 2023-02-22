@@ -8,8 +8,10 @@ from loguru import logger
 from typing import List, Tuple, Optional
 from goose3 import Goose
 from inscriptis import get_text
-from ..utils.chat import Utils, Sim, Cut
-from .setting import STOP_SENTENCE
+from pydantic import BaseModel
+
+from ..utils.chat import Utils, Sim, Cut, DeEmphasis
+from .setting import STOP_SENTENCE, HELP_WORDS
 
 
 class Filter(object):
@@ -40,14 +42,10 @@ class Filter(object):
 
     @staticmethod
     def chinese_sentence_cut(text) -> list:
-        text = re.sub('([。！？\?])([^’”])', r'\1\n\2', text)
-        # 普通断句符号且后面没有引号
-        text = re.sub('(\.{6})([^’”])', r'\1\n\2', text)
-        # 英文省略号且后面没有引号
-        text = re.sub('(\…{2})([^’”])', r'\1\n\2', text)
-        # 中文省略号且后面没有引号
-        text = re.sub('([.。！？\?\.{6}\…{2}][’”])([^’”])', r'\1\n\2', text)
-        # 断句号+引号且后面没有引号
+        text = re.sub('([。！？\?])([^’”])', r'\1\n\2', text)  # 普通断句符号且后面没有引号
+        text = re.sub('(\.{6})([^’”])', r'\1\n\2', text)  # 英文省略号且后面没有引号
+        text = re.sub('(\…{2})([^’”])', r'\1\n\2', text)  # 中文省略号且后面没有引号
+        text = re.sub('([.。！？\?\.{6}\…{2}][’”])([^’”])', r'\1\n\2', text)  # 断句号+引号且后面没有引号
         return text.split("\n")
 
     @staticmethod
@@ -73,18 +71,27 @@ class Filter(object):
         if skip:
             return ""
         # 处理数据
-        sentence = sentence.strip(".").strip("…").replace('\xa0', '').replace('   ', '').replace("/r", '')
-        sentence = sentence.replace("/v", '').replace("/s", '').replace("/p", '').replace("/a", '').replace("/d", '')
+        pas = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+        _link = re.findall(pas, sentence)
+        sentence = sentence.strip(".").strip("…").replace('\xa0', '').replace('   ', '').replace("/r/r", '')
+        sentence = sentence.replace("/v/v", '').replace("/s/s", '').replace("/p/p", '').replace("/a/a", '').replace(
+            "/d/d",
+            '')
+        sentence = sentence.replace("\u2002", "")
+        if not _link:
+            sentence = sentence.strip(".").strip("…").replace('\xa0', '').replace('   ', '').replace("/r", '')
+            sentence = sentence.replace("/v", '').replace("/s", '').replace("/p", '').replace("/a", '').replace("/d",
+                                                                                                                '')
         sentence = sentence.replace("，", ",").replace("。", ".").replace("\n", ".")
         if 18 < len(sentence):
             return sentence.strip(".")
         else:
             return ""
 
-    def filter(self, sentences: List[str], limit: Tuple[int, int] = (0, 500)):
+    def filter(self, sentences: List[str], limit: Tuple[int, int] = (0, 500), filter_url: bool = True):
         _return_str = {}
         for item in sentences:
-            _fixed = self.__filter_sentence(item)
+            _fixed = self.__filter_sentence(item, filter_url=filter_url)
             if _fixed:
                 _return_str[_fixed] = 0
         _return_ = []
@@ -110,14 +117,10 @@ class Extract(object):
 
     @staticmethod
     def chinese_sentence_cut(text) -> list:
-        text = re.sub('([。！？\?])([^’”])', r'\1\n\2', text)
-        # 普通断句符号且后面没有引号
-        text = re.sub('(\.{6})([^’”])', r'\1\n\2', text)
-        # 英文省略号且后面没有引号
-        text = re.sub('(\…{2})([^’”])', r'\1\n\2', text)
-        # 中文省略号且后面没有引号
-        text = re.sub('([.。！？\?\.{6}\…{2}][’”])([^’”])', r'\1\n\2', text)
-        # 断句号+引号且后面没有引号
+        text = re.sub('([。！？\?])([^’”])', r'\1\n\2', text)  # 普通断句符号且后面没有引号
+        text = re.sub('(\.{6})([^’”])', r'\1\n\2', text)  # 英文省略号且后面没有引号
+        text = re.sub('(\…{2})([^’”])', r'\1\n\2', text)  # 中文省略号且后面没有引号
+        text = re.sub('([.。！？\?\.{6}\…{2}][’”])([^’”])', r'\1\n\2', text)  # 断句号+引号且后面没有引号
         return text.split("\n")
 
     @staticmethod
@@ -193,44 +196,29 @@ class Extract(object):
         return _return_raw
 
 
-class PromptTool(object):
+class NlpUtils(object):
     @staticmethod
     def help_words_list():
-        return ["怎么做",
-                "How",
-                "how",
-                "如何做",
-                "帮我",
-                "帮助我",
-                "请给我",
-                "给出建议",
-                "给建议",
-                "给我建议",
-                "给我一些",
-                "请教",
-                "建议",
-                "步骤",
-                "怎样",
-                "如何",
-                "怎么样",
-                "为什么",
-                "帮朋友",
-                "怎么",
-                "需要什么",
-                "注意什么",
-                "怎么办"] + ['怎麼做',
-                             '如何做', '幫我', '幫助我',
-                             '請給我', '給出建議', '給建議',
-                             '給我建議', '給我一些', '請教', '建議',
-                             '步驟', '怎樣', '如何', '怎麼樣', '為什麼',
-                             '幫朋友', '怎麼', '需要什麼', '註意什麼',
-                             '怎麼辦'] + ['助け',
-                                          '何を',
-                                          'なぜ',
-                                          '教えて',
-                                          '提案',
-                                          '何が',
-                                          '何に']
+        cn = ["怎么做", "How", "how",
+              "如何做", "帮我", "帮助我",
+              "请给我", "给出建议", "给建议",
+              "给我建议", "给我一些", "请教",
+              "建议", "步骤", "怎样", "如何",
+              "怎么样", "为什么", "帮朋友", "怎么",
+              "需要什么", "注意什么",
+              "怎么办"]
+        cn2 = ['怎麼做',
+               '如何做', '幫我', '幫助我',
+               '請給我', '給出建議', '給建議',
+               '給我建議', '給我一些', '請教', '建議',
+               '步驟', '怎樣', '如何', '怎麼樣', '為什麼',
+               '幫朋友', '怎麼', '需要什麼', '註意什麼',
+               '怎麼辦']
+        jp = ['助け',
+              '何を', 'なぜ',
+              '教えて', '提案',
+              '何が', '何に']
+        return cn + cn2 + jp
 
     @staticmethod
     def isStrIn(prompt: str, keywords: list):
@@ -241,57 +229,40 @@ class PromptTool(object):
         return isIn
 
     @staticmethod
-    def nlp_filter_list(prompt, material: list):
+    def compression(prompt, material: list):
         if not material or not isinstance(material, list):
             return []
-        logger.trace(f"NLP")
-        # 双匹配去重
-        while len(material) > 2:
-            prev_len = len(material)
-            _pre = material[0]
-            _afe = material[1]
-            sim = Sim.simhash_similarity(pre=_pre, aft=_afe)
-            if sim < 12:
-                _remo = _afe if len(_afe) > len(_pre) else _pre
-                # 移除过于相似的
-                material.remove(_remo)
-            if len(material) == prev_len:
-                break
-
-        while len(material) > 2:
-            prev_len = len(material)
-            material_len = len(material)
-            for i in range(0, len(material), 2):
-                if i + 1 >= material_len:
-                    continue
-                _pre = material[i]
-                _afe = material[i + 1]
-                sim = Sim.cosion_similarity(pre=_pre, aft=_afe)
-                if sim > 0.9:
-                    _remo = _afe if len(_afe) > len(_pre) else _pre
-                    # 移除过于相似的
-                    material.remove(_remo)
-                    material_len = material_len - 1
-            if len(material) == prev_len:
-                break
-
-        # 去重排序+删除无关
+        material = list(DeEmphasis().by_sim(sentence_list=material))
+        # 去重排序
         material_ = {item: 1 for item in material}
         material = list(material_.keys())
         _top_table = {}
         for item in material:
             _top_table[item] = Sim.cosion_similarity(pre=prompt, aft=item)
-        material = {k: v for k, v in _top_table.items() if v > 0.23}
+        material = {k: v for k, v in _top_table.items() if v > 0.1}
 
         # 搜索引擎比相似度算法靠谱所以注释掉了
         # material = OrderedDict(sorted(material.items(), key=lambda t: t[1]))
-        # logger.trace(material)
 
         # 二倍问题过滤测量
+        """
         _del_keys = []
         for k, i in material.items():
             # 调整对于标题的惩罚参数
-            if len(k) < len(Filter.url_filter(prompt[:20])) * 2.5:
+            _k_real_len = len(Filter.url_filter(k))
+            if _k_real_len < len(prompt[:20]) * 2:
+                _del_keys.append(k)
+        for ks in _del_keys:
+            material.pop(ks)
+        """
+
+        # 过滤
+        USELESS_WORDS = ["怎么", "吗？", "什么", "怎样", "么"]
+        _del_keys = []
+        for k, i in material.items():
+            # 调整对于标题的惩罚参数
+            _real_len = len(Filter.url_filter(k[:20]))
+            if NlpUtils.isStrIn(keywords=USELESS_WORDS, prompt=k) and _real_len < 30:
                 _del_keys.append(k)
         for ks in _del_keys:
             material.pop(ks)
@@ -304,16 +275,6 @@ class PromptTool(object):
         for ks in _del_keys:
             material.pop(ks)
 
-        # 关联度指数计算
-        _key = Utils.tfidf_keywords(prompt, topK=10)
-        _score = 0
-        _del_keys = []
-        for k, i in material.items():
-            for ir in _key:
-                if ir in k:
-                    _score += 1
-            if _score / len(_key) < 0.2:
-                _del_keys.append(k)
-        for k in _del_keys:
-            material.pop(k)
-        return list(material.keys())
+        # 聚类
+        material = DeEmphasis().by_tfidf(sentence_list=list(material.keys()), threshold=0.72)
+        return material
