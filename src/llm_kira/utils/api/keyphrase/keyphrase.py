@@ -112,4 +112,4 @@ if __name__ == '__main__':
         text = f.read()
     key_phrase_extractor = KeyPhraseExtraction(topk=20)
     key_phrase = key_phrase_extractor.key_phrase_extraction(text)
-    key_phrase_extractor.wordcloud(key_phrase)
+    # key_phrase_extractor.wordcloud(key_phrase)

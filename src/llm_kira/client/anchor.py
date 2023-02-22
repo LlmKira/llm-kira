@@ -4,8 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 from typing import Union, Callable, List, Optional
-from loguru import logger
-
+# from loguru import logger
 from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
 from .types import LlmReturn, Interaction, PromptItem
@@ -13,7 +12,7 @@ from ..creator.engine import PromptEngine
 from ..error import LLMException
 
 # Utils
-from ..utils.chat import Detect, Sim
+from ..utils.chat import Sim
 
 # Completion
 from .types import ChatBotReturn
