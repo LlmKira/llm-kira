@@ -236,7 +236,7 @@ class ChatGpt(LlmBase):
         try:
             response = await network.request(
                 method="POST",
-                url=_request_arg.get("api") + "/message",
+                url=llm_param.api + "/message",
                 data=_message_arg,
                 headers=headers,
                 json_body=True,
@@ -250,7 +250,7 @@ class ChatGpt(LlmBase):
         reply = self.parse_response(response)
         self.profile.update_usage(usage=self.parse_usage(response))
         return LlmReturn(model_flag=llm_param.model_name,
-                         raw=response,
+                         raw=response.json(),
                          prompt=prompt,
                          usage=self.profile.get_round_usage(),
                          time=int(time.time()),
