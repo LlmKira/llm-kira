@@ -155,17 +155,21 @@ class SinglePoint(Point):
 
     def _filler(self,
                 _message: List[InteractionWeight],
-                token: int, sort_by_weight: bool = False
+                token: int,
+                sort_by_weight: bool = False,
+                reversed_sort: bool = True,
+                just_score: float = 0.5,
                 ) -> Tuple[List[Interaction], int]:
         __now = 0
         __returner = []
         if sort_by_weight:
             _message.sort(key=attrgetter('score'), reverse=True)
         for __item in _message:
-            if __item.score > 0.5 and __now < token:
+            if __item.score > just_score and __now < token:
                 __now += self.tokenizer(__item.interaction.raw)
                 __returner.append(__item.interaction)
-        __returner = list(reversed(__returner))
+        if reversed_sort:
+            __returner = list(reversed(__returner))
         return __returner, token - __now
 
     def run(self) -> List[Interaction]:
@@ -216,9 +220,9 @@ class SinglePoint(Point):
 
         # Knowledge Search
         # knowledge 搜索引擎优待函数
-        _attention = 3 if len(knowledge) > 3 else len(knowledge)
-        for i in range(0, _attention):
-            knowledge[i].weight.append(68)
+        # _attention = 3 if len(knowledge) > 3 else len(knowledge)
+        # for i in range(0, _attention):
+        #    knowledge[i].weight.append(80)
 
         # knowledge 相似度检索
         for item in knowledge:
@@ -232,8 +236,16 @@ class SinglePoint(Point):
             score = _ask_diff * 100 + 31
             item.weight.append(score)
 
+        # knowledge 梯度初始权重
+        for i in range(0, len(knowledge)):
+            _forget = self.forgetting_curve(i)
+            knowledge[i].weight.append(_forget)
+
         # Fill
-        _optimized, _rest = self._filler(_message=knowledge, token=_knowledge_token_limit, sort_by_weight=True)
+        _optimized, _rest = self._filler(_message=knowledge,
+                                         token=_knowledge_token_limit,
+                                         sort_by_weight=True,
+                                         reversed_sort=False)
         _returner.extend(_optimized)
         _forget_all = False
         for item in self.forget_words:

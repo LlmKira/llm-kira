@@ -4,6 +4,9 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 from typing import Union, Callable, List, Optional
+
+from loguru import logger
+
 # from loguru import logger
 from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase

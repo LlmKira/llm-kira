@@ -276,5 +276,5 @@ class NlpUtils(object):
             material.pop(ks)
 
         # 聚类
-        material = DeEmphasis().by_tfidf(sentence_list=list(material.keys()), threshold=0.72)
+        material = DeEmphasis().by_tfidf(sentence_list=list(material.keys()), threshold=0.5)
         return material
