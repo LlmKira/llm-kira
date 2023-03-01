@@ -37,7 +37,7 @@ llm_kira.setting.webServerStopSentence = ["广告", "营销号"]  # 有默认值
 
 ## Demo
 
-**More examples of use in `test/test.py`.**
+**More examples of use in `lab/test.py`.**
 
 Take `openai` as an example
 
