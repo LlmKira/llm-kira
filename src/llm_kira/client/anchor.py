@@ -47,6 +47,7 @@ class ChatBot(object):
         :param predict_tokens: 预测 Token 位
         :param llm_param: 大语言模型参数
         :param parse_reply: Callable[[list], str] 覆写解析方法
+        :param clean_prompt:
         """
         self.prompt = prompt
         # ReWrite

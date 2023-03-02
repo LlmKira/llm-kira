@@ -127,7 +127,7 @@ class SinglePoint(Point):
                  tokenizer,
                  prompt: PromptItem = "",
                  desc: str = "",
-                 attention: int = 3,
+                 attention: int = 4,
                  interaction: List[Interaction] = None,
                  knowledge: List[Interaction] = None,
                  reference_ratio: float = 0.15,
@@ -236,13 +236,8 @@ class SinglePoint(Point):
                 _come_diff = Sim.cosion_similarity(pre=_old, aft=_content)
             _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
             _ask_diff = _ask_diff if _ask_diff > _come_diff else _come_diff
-            score = _ask_diff * 100 + 31
+            score = _ask_diff * 100 + 30
             item.weight.append(score)
-
-        # knowledge 梯度初始权重
-        for i in range(0, len(knowledge)):
-            _forget = self.forgetting_curve(i)
-            knowledge[i].weight.append(_forget)
 
         # Fill
         _optimized, _rest = self._filler(_message=knowledge,
