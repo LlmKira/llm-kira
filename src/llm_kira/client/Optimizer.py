@@ -7,6 +7,7 @@
 优化器
 """
 import math
+import time
 from operator import attrgetter
 from typing import List, Tuple
 import datetime
@@ -191,12 +192,18 @@ class SinglePoint(Point):
         # interaction attention
         _attention = self.attention if len(interaction) > self.attention else len(interaction)
         for ir in range(0, _attention):
-            interaction[ir].weight.append(70)
+            interaction[ir].weight.append(65)
 
-        # interaction 遗忘函数
+        # interaction 时间边际函数，用于注意力高峰
         for i in range(0, len(interaction)):
-            _forget = self.forgetting_curve(i)
-            interaction[i].weight.append(_forget)
+            _hour_cal = Scorer.cal_time_seconds(stamp1=time.time(),
+                                                stamp2=interaction[i].interaction.time / 1000) / 3600
+            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
+            _forget = Scorer.sim_forget(sim=0.5,
+                                        hour=_hour_cal,
+                                        rank=0.5) * 100
+            _forget = _forget if i < 6 and _forget < 50 else 15
+            interaction[i].weight.append(int(_forget))
 
         # interaction 相似度检索
         for item in interaction:
