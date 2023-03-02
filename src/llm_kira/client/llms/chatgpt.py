@@ -132,7 +132,7 @@ class ChatGpt(LlmBase):
         Choice = response.get("choices")
         if Choice:
             for item in Choice:
-                _text = item.get("text")
+                _text = item["message"]["content"]
                 REPLY.append(_text)
         if not REPLY:
             REPLY = [""]
@@ -233,7 +233,8 @@ class ChatGpt(LlmBase):
                                           ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
            wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
-           reraise=True)
+           reraise=True,
+           )
     async def run(self,
                   prompt: Union[PromptEngine, str],
                   validate: Union[List[str], None] = None,
@@ -284,7 +285,7 @@ class ChatGpt(LlmBase):
             _content = item[1]
             if _content != prompt.description:
                 _message_list.append(ChatPrompt(role=_role, content=_content))
-
+        print(_message_list)
         # 补全参数
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
@@ -342,9 +343,9 @@ class ChatGpt(LlmBase):
     def __role_edit(self, _role) -> Literal["system", "user", "assistant"]:
         if _role in ["system", "user", "assistant"]:
             return _role
-        if Sim.cosion_similarity(pre=str(_role), aft=self.profile.start_name) > 0.90:
+        if Sim.cosion_similarity(pre=str(_role), aft=self.profile.start_name) > 0.85:
             return "user"
-        if Sim.cosion_similarity(pre=str(_role), aft=self.profile.restart_name) > 0.90:
+        if Sim.cosion_similarity(pre=str(_role), aft=self.profile.restart_name) > 0.85:
             return "assistant"
         if _role not in ["system", "user", "assistant"]:
             return "user"
