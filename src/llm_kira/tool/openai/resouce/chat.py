@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-# @Time    : 12/15/22 9:54 PM
-# @FileName: __init__.py
+# @Time    : 3/2/23 4:44 PM
+# @FileName: chat.py
 # @Software: PyCharm
 # @Github    ：sudoskys
 import random
-from typing import Union
+from typing import Union, Optional, Literal, List
+
+from pydantic import BaseModel
+
 from ...openai.api.api_utils import load_api
 from ...openai.api.network import request
 from ....utils import setting
@@ -12,7 +15,12 @@ from ....utils import setting
 API = load_api()
 
 
-class Completion(object):
+class ChatPrompt(BaseModel):
+    role: Literal["system", "user", "assistant"] = "user"
+    content: str = ""
+
+
+class ChatCompletion(object):
     def __init__(self, api_key: Union[str, list] = None, proxy_url: str = "", call_func=None):
         # if api_key is None:
         #     api_key = setting.openaiApiKey
@@ -35,8 +43,8 @@ class Completion(object):
         return self.__api_key
 
     async def create(self,
-                     model: str = "text-davinci-003",
-                     prompt: str = "Say this is a test",
+                     model: str = "gpt-3.5-turbo",
+                     prompt: Union[List[ChatPrompt], dict] = None,
                      temperature: float = 0,
                      max_tokens: int = 7,
                      **kwargs
@@ -50,16 +58,21 @@ class Completion(object):
         :return:
         """
         """
-        curl https://api.openai.com/v1/completions \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer YOUR_API_KEY" \
-        -d '{"model": "text-davinci-003", "prompt": "Say this is a test", "temperature": 0, "max_tokens": 7}'
+        curl https://api.openai.com/v1/chat/completions \
+          -H 'Content-Type: application/json' \
+          -H 'Authorization: Bearer YOUR_API_KEY' \
+          -d '{
+          "model": "gpt-3.5-turbo",
+          "messages": [{"role": "user", "content": "Hello!"}]
+        }'
         """
-        api = API["v1"]["completions"]
+        api = API["v1"]["chat"]["completions"]
+        if not isinstance(prompt, dict):
+            prompt = [item.dict() for item in prompt]
         # 参数决定
         params = {
             "model": model,
-            "prompt": prompt,
+            "messages": prompt,
             "temperature": temperature,
             "max_tokens": max_tokens
         }

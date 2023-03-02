@@ -55,6 +55,13 @@ class Interaction(BaseModel):
     def raw(self):
         return "\n".join(self.content)
 
+    @property
+    def message(self):
+        if self.single:
+            return [[self.ask.start, self.ask.text]]
+        else:
+            return [[self.ask.start, self.ask.text], [self.reply.start, self.reply.text]]
+
 
 class InteractionWeight(BaseModel):
     interaction: Interaction
@@ -83,3 +90,7 @@ class ChatBotReturn(BaseModel):
     llm: LlmReturn
     ask: str
     reply: str
+
+
+class LlmException(Exception):
+    pass

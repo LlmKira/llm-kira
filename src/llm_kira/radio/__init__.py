@@ -4,4 +4,4 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 
-__all__ = ["anchor", "crawer", "decomposer", "setting"]
+# __all__ = ["anchor", "crawer", "decomposer", "setting"]

@@ -8,7 +8,7 @@ from typing import Union
 
 from ..api.api_utils import load_api
 from ..api.network import request
-from llm_kira.utils import setting
+from ....utils import setting
 
 API = load_api()
 
