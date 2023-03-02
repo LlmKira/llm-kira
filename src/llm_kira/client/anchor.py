@@ -40,6 +40,7 @@ class ChatBot(object):
                       predict_tokens: Union[int] = 100,
                       llm_param: LlmBaseParam = None,
                       parse_reply: Callable[[list], str] = None,
+                      clean_prompt: bool = True,
                       ) -> ChatBotReturn:
         """
         :param prompt: PromptEngine
@@ -63,7 +64,8 @@ class ChatBot(object):
             predict_tokens=predict_tokens,
             llm_param=llm_param
         )
-        prompt.clean(clean_prompt=True)
+        if clean_prompt:
+            prompt.clean(clean_prompt=True)
 
         self.prompt.build_interaction(
             ask=_prompt_index,
