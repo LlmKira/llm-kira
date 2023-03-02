@@ -14,4 +14,4 @@ def forget(sim, hour, rank=0.5):
     return R
 
 
-print(forget(sim=0.5, hour=1.55) * 100)
+print(forget(sim=0.5, hour=0.01) * 100)

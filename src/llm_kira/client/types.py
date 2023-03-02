@@ -8,10 +8,11 @@ import uuid
 from typing import Optional
 from typing import List
 from pydantic import BaseModel, validator, root_validator
+import shortuuid
 
 
 class PromptItem(BaseModel):
-    id: str = str(uuid.uuid4())
+    id: str = str(shortuuid.uuid())
     start: str = ""
     text: str
     connect_words: str = ":"

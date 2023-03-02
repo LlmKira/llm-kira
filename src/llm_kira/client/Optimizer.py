@@ -131,7 +131,7 @@ class SinglePoint(Point):
                  attention: int = 4,
                  interaction: List[Interaction] = None,
                  knowledge: List[Interaction] = None,
-                 reference_ratio: float = 0.15,
+                 reference_ratio: float = 0.1,
                  token_limit: int = 2000,
                  forget_words: List[str] = None,
                  ):
@@ -198,11 +198,13 @@ class SinglePoint(Point):
         for i in range(0, len(interaction)):
             _hour_cal = Scorer.cal_time_seconds(stamp1=time.time(),
                                                 stamp2=interaction[i].interaction.time / 1000) / 3600
-            _hour_cal = math.ceil(abs(round(_hour_cal, 3)))
+            _hour_cal = abs(round(_hour_cal, 3))
             _forget = Scorer.sim_forget(sim=0.5,
                                         hour=_hour_cal,
                                         rank=0.5) * 100
-            _forget = _forget if i < 6 and _forget < 50 else 15
+            # 如果大于 10 且 一小时内,则手动降权防止无用信息增值
+            if i > 10 and _hour_cal < 1:
+                _forget = 15
             interaction[i].weight.append(int(_forget))
 
         # interaction 相似度检索
@@ -232,7 +234,11 @@ class SinglePoint(Point):
         # knowledge 搜索引擎优待函数
         # _attention = 3 if len(knowledge) > 3 else len(knowledge)
         # for i in range(0, _attention):
-        #    knowledge[i].weight.append(80)
+        #     knowledge[i].weight.append(80)
+        # knowledge 梯度初始权重
+        for i in range(0, len(knowledge)):
+            _forget = self.forgetting_curve(i)
+            knowledge[i].weight.append(_forget)
 
         # knowledge 相似度检索
         for item in knowledge:
@@ -243,7 +249,7 @@ class SinglePoint(Point):
                 _come_diff = Sim.cosion_similarity(pre=_old, aft=_content)
             _ask_diff = Sim.cosion_similarity(pre=prompt.prompt, aft=_content)
             _ask_diff = _ask_diff if _ask_diff > _come_diff else _come_diff
-            score = _ask_diff * 100 + 30
+            score = _ask_diff * 100 + 27
             item.weight.append(score)
 
         # Fill
