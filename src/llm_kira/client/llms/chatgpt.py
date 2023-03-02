@@ -285,7 +285,7 @@ class ChatGpt(LlmBase):
             _content = item[1]
             if _content != prompt.description:
                 _message_list.append(ChatPrompt(role=_role, content=_content))
-        print(_message_list)
+        # print(_message_list)
         # 补全参数
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
