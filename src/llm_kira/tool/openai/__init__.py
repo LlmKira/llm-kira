@@ -5,3 +5,4 @@
 # @Github    ：sudoskys
 from .resouce import Completion
 from .resouce import Moderations
+from .resouce import ChatCompletion, ChatPrompt

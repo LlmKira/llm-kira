@@ -4,12 +4,12 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import time
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Optional
 
 from loguru import logger
 
-from llm_kira.client import Optimizer
-
+from .base import BaseEngine
+from ..client import Optimizer
 from ..client.agent import Conversation, MemoryManager
 from ..client.llms.base import LlmBase
 from ..client.types import Interaction, PromptItem
@@ -17,7 +17,7 @@ from ..radio.anchor import Antennae
 from ..utils.data import MsgFlow
 
 
-class PromptEngine(object):
+class PromptEngine(BaseEngine):
     """
     设计用于维护提示系统和接入外骨骼
     """
@@ -95,10 +95,11 @@ class PromptEngine(object):
         _buffer = self.prompt_buffer.copy()
         if self.reverse_prompt_buffer:
             _buffer = list(reversed(_buffer))
+        if not _buffer:
+            return None
         _index = _buffer.pop(-1)
         for item in _buffer:
             self.build_interaction(ask=item, single=True)
-        self.clean(clean_prompt=True)
         return _index
 
     def read_interaction(self):
@@ -193,11 +194,14 @@ class PromptEngine(object):
         _optimized_prompt.append(Interaction(single=True, ask=prompt))
         return _optimized_prompt
 
-    def build_prompt(self, predict_tokens: int = 500) -> Tuple[PromptItem, List[Interaction]]:
+    def build_prompt(self, predict_tokens: int = 500) -> Tuple[Optional[PromptItem], List[Interaction]]:
         """
         Optimising context and re-cutting
         """
         user_input = self._build_prompt_buffer()
+        if not user_input:
+            logger.warning("No Buffer")
+            return None, []
         prompt = self.build_context(user_input, predict_tokens=predict_tokens)
         return user_input, prompt
 
@@ -285,3 +289,9 @@ class Preset(object):
             head = f"{start_name}{restart_name}の会話,"
             head = self.add_tail(prompt_iscode, sentence=head, tail="プログラミング指導を提供する,")
         return f"{head}"
+
+
+class MiddlePrompt(object):
+    def __init__(self, prompt: PromptEngine = None, limit_token: int = 2000):
+        self.prompt = prompt
+        self.limit_token: int = limit_token

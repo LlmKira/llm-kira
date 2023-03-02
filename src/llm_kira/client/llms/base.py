@@ -8,10 +8,8 @@ import time
 import os
 from abc import abstractmethod, ABC
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
-
 from loguru import logger
 from pydantic import BaseModel
-
 from ..types import LlmReturn
 
 
@@ -87,7 +85,7 @@ class LlmBase(ABC):
 
     @abstractmethod
     async def run(self,
-                  prompt: str,
+                  prompt: Any,
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: LlmBaseParam = None,

@@ -8,6 +8,8 @@ import time
 import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
+
+from loguru import logger
 # from loguru import logger
 
 from ...error import RateLimitError, ServiceUnavailableError
@@ -15,8 +17,10 @@ from ...tool import openai as openai_api
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
+from ...creator.engine import PromptEngine
 from ..llms.base import LlmBase, LlmBaseParam
-from ..types import LlmReturn
+from ..types import LlmReturn, LlmException
+from ...utils.chat import Sim
 from ...utils.data import DataUtils
 from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
 
@@ -229,12 +233,13 @@ class OpenAi(LlmBase):
            wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
            reraise=True)
     async def run(self,
-                  prompt: str,
+                  prompt: Union[PromptEngine, str],
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: OpenAiParam = None,
                   stop_words: list = None,
-                  anonymous_user: bool = True,
+                  anonymous_user: bool = False,
+                  rank_name: bool = False,
                   **kwargs
                   ) -> LlmReturn:
         """
@@ -245,6 +250,7 @@ class OpenAi(LlmBase):
         :param llm_param: 参数表
         :param anonymous_user:
         :param stop_words:
+        :param rank_name:
         :return:
         """
         _request_arg = {
@@ -252,25 +258,48 @@ class OpenAi(LlmBase):
             "n": 1
         }
         _request_arg: dict
+        if not isinstance(prompt, str):
+            # Prompt
+            _prompt_list = []
+            # Get
+            _llm_result_limit = self.get_token_limit() - predict_tokens
+            _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
+            _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
+            if not _prompt_input:
+                raise LlmException("Input Is Empty")
+            for item in _prompt:
+                _prompt_list.extend(item.content)
+            prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.restart_name}:"
+            prompt_build = self.resize_sentence(prompt_build, token=self.get_token_limit())
+            stop_words = None if not rank_name else self.__person(prompt=_prompt_input, prompt_list=_prompt)
+        else:
+            prompt_build = self.resize_sentence(prompt, token=predict_tokens)
+
+        # 停止符号
         if stop_words is None:
             stop_words = [f"{self.profile.start_name}:",
                           f"{self.profile.restart_name}:",
                           f"{self.profile.start_name}：",
                           f"{self.profile.restart_name}："]
-        # Kwargs
+
+        # 补全参数
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
         if validate is None:
             validate = []
+
+        # 构造覆盖信息
         _request_arg.update(model=str(llm_param.model_name),
-                            prompt=str(prompt),
+                            prompt=prompt_build,  # IMPORTANT
                             max_tokens=int(predict_tokens),
                             user=str(self.profile.get_conversation_hash()),
                             stop=stop_words[:4],
                             )
+
         # Anonymous
         if anonymous_user:
             _request_arg.pop("user", None)
+
         # Adjust Penalty
         """
         if self.auto_penalty and validate:
@@ -313,18 +342,6 @@ class OpenAi(LlmBase):
             _temperature = _request_arg["temperature"]
             _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
 
-        # 继承重写
-        # openai_client.api_key = self.__api_key
-        # try:
-        #     response = await openai_client.Completion.acreate(**_request_arg)
-        # except openai_client.error.OpenAIError as e:
-        #     if self.__call_func:
-        #         self.__call_func(e.json_body, self.__api_key)
-        #     openai_error_handler(e.code, e.error)
-        #     raise
-        # except Exception as e:
-        #     raise LLMException(e)
-
         # 自维护 Api 库
         response = await openai_api.Completion(api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg
@@ -335,8 +352,29 @@ class OpenAi(LlmBase):
         self.profile.update_usage(usage=self.parse_usage(response))
         return LlmReturn(model_flag=llm_param.model_name,
                          raw=response,
-                         prompt=prompt,
+                         prompt=prompt_build,
                          usage=self.profile.get_round_usage(),
                          time=int(time.time()),
-                         reply=reply,
+                         reply=reply
                          )
+
+    @staticmethod
+    def __rank_name(prompt: str, users: List[str]):
+        __temp = {}
+        for item in users:
+            __temp[item] = 0
+        users = list(__temp.keys())
+        _ranked = list(sorted(users, key=lambda i: Sim.cosion_similarity(pre=str(prompt), aft=str(i)), reverse=True))
+        return _ranked
+
+    def __person(self, prompt, prompt_list: list):
+        _person_list = [f"{self.profile.start_name}:",
+                        f"{self.profile.restart_name}:",
+                        f"{self.profile.start_name}：",
+                        f"{self.profile.restart_name}：",
+                        ]
+        for item in prompt_list:
+            if item.ask.connect_words.strip() in [":", "："]:
+                _person_list.append(f"{item.ask.start}{item.ask.connect_words}")
+        _person_list = self.__rank_name(prompt=prompt, users=_person_list)
+        return _person_list

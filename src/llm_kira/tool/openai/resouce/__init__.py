@@ -3,7 +3,7 @@
 # @FileName: __init__.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-
+from .chat import ChatCompletion, ChatPrompt
 from .completion import Completion
 from .moderations import Moderations
 

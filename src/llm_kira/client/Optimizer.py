@@ -179,7 +179,10 @@ class SinglePoint(Point):
         knowledge = Scorer.build_weight(self.knowledge)
         _knowledge_token_limit = int(self.token_limit * self.reference_ratio)
         _interaction_token_limit = self.token_limit - _knowledge_token_limit
-        _returner = [Interaction(single=True, ask=PromptItem(start="*", text=self.desc))]
+
+        # Desc
+        _returner = [Interaction(single=True, ask=PromptItem(start="system", text=self.desc))]
+
         _old_prompt = interaction[:1]
         # Desc
         if self.tokenizer(self.desc) > self.token_limit:
