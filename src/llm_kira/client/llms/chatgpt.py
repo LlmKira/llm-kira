@@ -19,7 +19,7 @@ from ...tool import openai as openai_api
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
-from ..llms.base import LlmBase, LlmBaseParam
+from ..llms.base import LlmBase, LlmBaseParam, Transfer
 from ..types import LlmReturn, Interaction, LlmException
 from ...tool.openai import ChatPrompt
 from ...utils.chat import Sim
@@ -229,6 +229,40 @@ class ChatGpt(LlmBase):
         else:
             return 4000
 
+    async def transfer(self,
+                       prompt: Union[PromptEngine, str],
+                       predict_tokens: int = 2000
+                       ) -> Transfer:
+        """
+        转换提示引擎为当前 LLM 的数据输入
+        """
+        _llm_result_limit = self.get_token_limit() - predict_tokens
+        _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
+        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
+        if isinstance(prompt, str):
+            return Transfer(index=[prompt], data=[ChatPrompt(role="user", content=prompt)],
+                            raw=(_prompt_input, _prompt))
+        _prompt: List[Interaction]
+        # Get
+        if not _prompt_input:
+            raise LlmException("Input Is Empty")
+        _prompt_ = _prompt_input.prompt
+        # Temp
+        _message = []
+        for item in _prompt:
+            item: Interaction
+            _message.extend(item.message)
+        # Prompt
+        _message_ = [ChatPrompt(role="system", content=prompt.description)]
+        for item in _message:
+            item: List[str]
+            # 对齐 _role
+            _role = self.__role_edit(item[0])
+            _content = item[1]
+            if _content != prompt.description:
+                _message_.append(ChatPrompt(role=_role, content=_content))
+        return Transfer(index=[_prompt_], data=_message_, raw=(_prompt_input, _prompt))
+
     @retry(retry=retry_if_exception_type((RateLimitError,
                                           ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
@@ -236,7 +270,7 @@ class ChatGpt(LlmBase):
            reraise=True,
            )
     async def run(self,
-                  prompt: Union[PromptEngine, str],
+                  prompt: Union[Transfer, PromptEngine, str],
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: ChatGptParam = None,
@@ -256,42 +290,20 @@ class ChatGpt(LlmBase):
         :param rank_name:
         :return:
         """
+        if not isinstance(prompt, Transfer):
+            prompt = await self.transfer(prompt=prompt, predict_tokens=predict_tokens)
+        _message_list = prompt.data
+        _prompt_input = prompt.index[0]
         _request_arg = {
             "top_p": 1,
             "n": 1
         }
         _request_arg: dict
-        _llm_result_limit = self.get_token_limit() - predict_tokens
-        _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
-        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
-        _prompt: List[Interaction]
-
-        # Get
-        if not _prompt_input:
-            raise LlmException("Input Is Empty")
-        _prompt_input = _prompt_input.prompt
-
-        # Temp
-        _message = []
-        for item in _prompt:
-            item: Interaction
-            _message.extend(item.message)
-        # Prompt
-        _message_list = [ChatPrompt(role="system", content=prompt.description)]
-        for item in _message:
-            item: List[str]
-            # 对齐 _role
-            _role = self.__role_edit(item[0])
-            _content = item[1]
-            if _content != prompt.description:
-                _message_list.append(ChatPrompt(role=_role, content=_content))
-        # print(_message_list)
         # 补全参数
         if llm_param:
             _request_arg.update(llm_param.invocation_params)
         if validate is None:
             validate = []
-
         # 构造覆盖信息
         _request_arg.update(model=str(llm_param.model_name),
                             max_tokens=int(predict_tokens),

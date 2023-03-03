@@ -60,8 +60,9 @@ class ChatBot(object):
         # Get Question Index
         _prompt_index = self.prompt.prompt
         # Get
+        _transfer = await self.llm.transfer(prompt=prompt, predict_tokens=predict_tokens)
         llm_result: LlmReturn = await self.llm.run(
-            prompt=prompt,
+            prompt=_transfer,
             predict_tokens=predict_tokens,
             llm_param=llm_param
         )

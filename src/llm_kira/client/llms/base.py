@@ -13,6 +13,12 @@ from pydantic import BaseModel
 from ..types import LlmReturn
 
 
+class Transfer(BaseModel):
+    index: List[str]
+    data: Any
+    raw: Tuple[Any, Any]
+
+
 def mix_result(_item):
     """
     使用遍历方法的混淆器
@@ -82,6 +88,13 @@ class LlmBase(ABC):
     @staticmethod
     def parse_usage(response) -> Optional[int]:
         return None
+
+    @abstractmethod
+    async def transfer(self,
+                       prompt: Any,
+                       predict_tokens: int = 2000
+                       ) -> Transfer:
+        pass
 
     @abstractmethod
     async def run(self,

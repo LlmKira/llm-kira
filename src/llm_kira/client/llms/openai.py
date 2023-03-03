@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
 from ...creator.engine import PromptEngine
-from ..llms.base import LlmBase, LlmBaseParam
+from ..llms.base import LlmBase, LlmBaseParam, Transfer
 from ..types import LlmReturn, LlmException
 from ...utils.chat import Sim
 from ...utils.data import DataUtils
@@ -227,13 +227,37 @@ class OpenAi(LlmBase):
         else:
             return 4000
 
+    async def transfer(self,
+                       prompt: Union[PromptEngine, str],
+                       predict_tokens: int = 500
+                       ) -> Transfer:
+        """
+        转换提示引擎为当前 LLM 的数据输入
+        """
+        # Get
+        _llm_result_limit = self.get_token_limit() - predict_tokens
+        _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
+        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
+        if isinstance(prompt, str):
+            prompt_build = self.resize_sentence(prompt, token=predict_tokens)
+            return Transfer(index=[_prompt_input.prompt], data=prompt_build, raw=(_prompt_input, _prompt))
+        # Prompt
+        _prompt_list = []
+        if not _prompt_input:
+            raise LlmException("Input Is Empty")
+        for item in _prompt:
+            _prompt_list.extend(item.content)
+        prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.restart_name}:"
+        prompt_build = self.resize_sentence(prompt_build, token=self.get_token_limit())
+        return Transfer(index=[_prompt_input.prompt], data=prompt_build, raw=(_prompt_input, _prompt))
+
     @retry(retry=retry_if_exception_type((RateLimitError,
                                           ServiceUnavailableError)),
            stop=stop_after_attempt(llmRetryAttempt),
            wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
            reraise=True)
     async def run(self,
-                  prompt: Union[PromptEngine, str],
+                  prompt: Union[Transfer, PromptEngine, str],
                   validate: Union[List[str], None] = None,
                   predict_tokens: int = 500,
                   llm_param: OpenAiParam = None,
@@ -258,24 +282,13 @@ class OpenAi(LlmBase):
             "n": 1
         }
         _request_arg: dict
-        if not isinstance(prompt, str):
-            # Prompt
-            _prompt_list = []
-            # Get
-            _llm_result_limit = self.get_token_limit() - predict_tokens
-            _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
-            _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
-            if not _prompt_input:
-                raise LlmException("Input Is Empty")
-            for item in _prompt:
-                _prompt_list.extend(item.content)
-            prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.restart_name}:"
-            prompt_build = self.resize_sentence(prompt_build, token=self.get_token_limit())
-            stop_words = None if not rank_name else self.__person(prompt=_prompt_input, prompt_list=_prompt)
-        else:
-            prompt_build = self.resize_sentence(prompt, token=predict_tokens)
-
+        if not isinstance(prompt, Transfer):
+            prompt = await self.transfer(prompt=prompt, predict_tokens=predict_tokens)
+        _prompt_input = prompt.index[0]
+        _prompt_ = prompt.data
+        _, _prompt = prompt.raw
         # 停止符号
+        stop_words = None if not rank_name else self.__person(prompt=_prompt_input, prompt_list=_prompt)
         if stop_words is None:
             stop_words = [f"{self.profile.start_name}:",
                           f"{self.profile.restart_name}:",
@@ -290,7 +303,7 @@ class OpenAi(LlmBase):
 
         # 构造覆盖信息
         _request_arg.update(model=str(llm_param.model_name),
-                            prompt=prompt_build,  # IMPORTANT
+                            prompt=_prompt_,  # IMPORTANT
                             max_tokens=int(predict_tokens),
                             user=str(self.profile.get_conversation_hash()),
                             stop=stop_words[:4],
@@ -352,7 +365,7 @@ class OpenAi(LlmBase):
         self.profile.update_usage(usage=self.parse_usage(response))
         return LlmReturn(model_flag=llm_param.model_name,
                          raw=response,
-                         prompt=prompt_build,
+                         prompt=_prompt_,
                          usage=self.profile.get_round_usage(),
                          time=int(time.time()),
                          reply=reply
@@ -367,7 +380,7 @@ class OpenAi(LlmBase):
         _ranked = list(sorted(users, key=lambda i: Sim.cosion_similarity(pre=str(prompt), aft=str(i)), reverse=True))
         return _ranked
 
-    def __person(self, prompt, prompt_list: list):
+    def __person(self, prompt: str, prompt_list: list):
         _person_list = [f"{self.profile.start_name}:",
                         f"{self.profile.restart_name}:",
                         f"{self.profile.start_name}：",
