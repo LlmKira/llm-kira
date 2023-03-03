@@ -78,6 +78,18 @@ async def mood_hook():
     print(_think.build_status(rank=5))
 
 
+async def chat_str():
+    llm = llm_kira.client.llms.ChatGpt(
+        profile=conversation,
+        api_key=openaiApiKey,
+        token_limit=4000,
+        auto_penalty=False,
+        call_func=None,
+    )
+    _res = await llm.run(prompt="你好", predict_tokens=200, llm_param=ChatGptParam())
+    print(_res)
+
+
 async def chatGpt():
     llm = llm_kira.client.llms.ChatGpt(
         profile=conversation,
@@ -302,6 +314,7 @@ t1 = time.time()
 # asyncio.run(Web())
 # asyncio.run(chat())
 asyncio.run(chatGpt())
+# asyncio.run(chat_str())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
 # asyncio.run(KeyParse())

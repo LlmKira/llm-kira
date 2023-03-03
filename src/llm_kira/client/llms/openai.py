@@ -237,10 +237,10 @@ class OpenAi(LlmBase):
         # Get
         _llm_result_limit = self.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
-        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
         if isinstance(prompt, str):
             prompt_build = self.resize_sentence(prompt, token=predict_tokens)
-            return Transfer(index=[_prompt_input.prompt], data=prompt_build, raw=(_prompt_input, _prompt))
+            return Transfer(index=[prompt], data=prompt_build, raw=(None, None))
+        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
         # Prompt
         _prompt_list = []
         if not _prompt_input:
@@ -258,9 +258,9 @@ class OpenAi(LlmBase):
            reraise=True)
     async def run(self,
                   prompt: Union[Transfer, PromptEngine, str],
-                  validate: Union[List[str], None] = None,
+                  llm_param: OpenAiParam,
                   predict_tokens: int = 500,
-                  llm_param: OpenAiParam = None,
+                  validate: Union[List[str], None] = None,
                   stop_words: list = None,
                   anonymous_user: bool = False,
                   rank_name: bool = False,
@@ -286,9 +286,10 @@ class OpenAi(LlmBase):
             prompt = await self.transfer(prompt=prompt, predict_tokens=predict_tokens)
         _prompt_input = prompt.index[0]
         _prompt_ = prompt.data
-        _, _prompt = prompt.raw
+        _, _raw_prompt = prompt.raw
         # 停止符号
-        stop_words = None if not rank_name else self.__person(prompt=_prompt_input, prompt_list=_prompt)
+        if _raw_prompt:
+            stop_words = None if not rank_name else self.__person(prompt=_prompt_input, prompt_list=_raw_prompt)
         if stop_words is None:
             stop_words = [f"{self.profile.start_name}:",
                           f"{self.profile.restart_name}:",

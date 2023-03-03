@@ -238,10 +238,10 @@ class ChatGpt(LlmBase):
         """
         _llm_result_limit = self.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
-        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
         if isinstance(prompt, str):
             return Transfer(index=[prompt], data=[ChatPrompt(role="user", content=prompt)],
-                            raw=(_prompt_input, _prompt))
+                            raw=(None, None))
+        _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
         _prompt: List[Interaction]
         # Get
         if not _prompt_input:
@@ -271,9 +271,9 @@ class ChatGpt(LlmBase):
            )
     async def run(self,
                   prompt: Union[Transfer, PromptEngine, str],
-                  validate: Union[List[str], None] = None,
+                  llm_param: ChatGptParam,
                   predict_tokens: int = 500,
-                  llm_param: ChatGptParam = None,
+                  validate: Union[List[str], None] = None,
                   stop_words: list = None,
                   anonymous_user: bool = False,
                   rank_name: bool = False,
