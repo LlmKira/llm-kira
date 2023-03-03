@@ -181,6 +181,10 @@ class SinglePoint(Point):
         _knowledge_token_limit = int(self.token_limit * self.reference_ratio)
         _interaction_token_limit = self.token_limit - _knowledge_token_limit
 
+        # Cost - Head = Body
+        _desc_cost = self.tokenizer(str(self.desc))
+        _interaction_token_limit = _interaction_token_limit - _desc_cost
+
         # Desc
         _returner = [Interaction(single=True, ask=PromptItem(start="system", text=self.desc))]
 
