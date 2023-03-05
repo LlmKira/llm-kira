@@ -253,7 +253,8 @@ class ChatGpt(LlmBase):
             item: Interaction
             _message.extend(item.message)
         # Prompt
-        _message_ = [ChatPrompt(role="system", content=prompt.description)]
+        # Assistant Self Description
+        _message_ = [ChatPrompt(role="assistant", content=prompt.description)]
         for item in _message:
             item: List[str]
             # 对齐 _role

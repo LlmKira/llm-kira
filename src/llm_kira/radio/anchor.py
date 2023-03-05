@@ -33,6 +33,10 @@ def warp_interaction(start: Union[str, bool] = "Google", content: List[str] = No
 
 
 class Multiplexers(object):
+    """
+    搜索结果复用
+    """
+
     def __init__(self):
         self.bucket = Bucket(uid=10086)
 
@@ -57,12 +61,20 @@ class Multiplexers(object):
 
 
 class Antennae(ABC):
+    """
+    基类
+    """
+
     @abstractmethod
     async def run(self, prompt, prompt_raw: str = None, **kwargs) -> List[Interaction]:
         return []
 
 
 class SearchCraw(Antennae):
+    """
+    搜索引擎
+    """
+
     def __init__(self,
                  deacon: List[str] = None,
                  start_name: str = None
@@ -97,6 +109,9 @@ class SearchCraw(Antennae):
 
 
 class DuckgoCraw(Antennae):
+    """
+    Api 实现
+    """
     def __init__(self,
                  deacon: List[str] = None,
                  start_name: str = None

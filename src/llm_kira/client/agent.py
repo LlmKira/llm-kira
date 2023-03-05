@@ -4,7 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import hashlib
-from typing import List
+from typing import List, Union
 from loguru import logger
 
 from .types import Interaction
@@ -59,13 +59,15 @@ class Conversation(object):
 
 class MemoryManager(object):
     def __init__(self,
-                 profile: Conversation,
+                 profile: Union[Conversation, int],
+                 area: str = ""
                  ):
         """
         记忆管理器
         """
-        self.profile = profile
-        self._DataManager = MsgFlow(uid=self.profile.conversation_id)
+        if not isinstance(profile, int):
+            profile = profile.conversation_id
+        self._DataManager = MsgFlow(uid=f"{profile}{area}")
 
     def reset_chat(self):
         return self._DataManager.forget()
@@ -76,4 +78,3 @@ class MemoryManager(object):
     def save_context(self, message: List[Interaction], override: bool = True):
         self._DataManager.save(interaction_flow=message, override=override)
         return message
-

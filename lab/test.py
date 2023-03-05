@@ -46,7 +46,7 @@ def random_string(length):
 
 async def completion():
     try:
-        response = await llm_kira.openai.Completion(api_key=openaiApiKey, proxy_url="").create(
+        response = await llm_kira.openai.Completion(api_key=openaiApiKey, proxy_url="http://127.0.0.1:7890").create(
             model="text-davinci-003",
             prompt="Say this is a test",
             temperature=0,
@@ -295,7 +295,7 @@ async def Web():
     # mysql中regexp的用法有哪些
     #
     _sentence_list = [
-        "什么是线性定常系统？"
+        "turboAPI发布时间?"
     ]
     from llm_kira.radio.anchor import SearchCraw, DuckgoCraw
     for item in _sentence_list:
@@ -309,11 +309,11 @@ async def Web():
 
 
 t1 = time.time()
-# asyncio.run(completion())
+asyncio.run(completion())
 # asyncio.run(mood_hook())
 # asyncio.run(Web())
 # asyncio.run(chat())
-asyncio.run(chatGpt())
+# asyncio.run(chatGpt())
 # asyncio.run(chat_str())
 # asyncio.run(Moderation())
 # asyncio.run(Sentiment())
