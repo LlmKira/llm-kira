@@ -30,7 +30,7 @@ from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llm
 class ChatGptParam(LlmBaseParam, BaseModel):
     model_name: str = "gpt-3.5-turbo"
     """Model name to use."""
-    temperature: float = 0.8
+    temperature: float = 1.19
     """What sampling temperature to use."""
     max_tokens: int = 256
     """The maximum number of tokens to generate in the completion.
@@ -38,9 +38,9 @@ class ChatGptParam(LlmBaseParam, BaseModel):
     the models maximal context size."""
     top_p: float = 1
     """Total probability mass of tokens to consider at each step."""
-    frequency_penalty: float = 0
+    frequency_penalty: float = -0.4
     """Penalizes repeated tokens according to frequency."""
-    presence_penalty: float = 0
+    presence_penalty: float = -0.2
     """Penalizes repeated tokens."""
     n: int = 1
     """How many completions to generate for each prompt."""
@@ -334,7 +334,7 @@ class ChatGpt(LlmBase):
             _request_arg["presence_penalty"] = _presence_penalty
         if _request_arg.get("temperature"):
             _temperature = _request_arg["temperature"]
-            _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
+            # _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
 
         # 自维护 Api 库
         response = await openai_api.ChatCompletion(api_key=self.__api_key, call_func=self.__call_func).create(
