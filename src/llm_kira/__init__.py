@@ -4,8 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 
-from . import client
+from . import client, setting
 from . import creator, radio
-from .tool import openai
-from .utils import setting
-from .utils.setting import RedisConfig
+from .component import openai_sdk
+from .setting import RedisConfig

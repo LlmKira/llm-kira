@@ -5,10 +5,15 @@
 # @Github    ：sudoskys
 from abc import ABC, abstractmethod
 
+
 class BaseEngine(ABC):
+    """
+    Base class for all engines
+    """
 
     @abstractmethod
     def build_prompt(self, predict_tokens: int = 500):
+        """
+        Build prompt for engine
+        """
         pass
-
-

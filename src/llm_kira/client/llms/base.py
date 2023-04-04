@@ -4,13 +4,11 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import json
-import time
 import os
 from abc import abstractmethod, ABC
-from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
-from loguru import logger
+from typing import Union, Optional, Any, Tuple, List
 from pydantic import BaseModel
-from ..types import LlmReturn
+from llm_kira.types import LlmReturn
 
 
 class Transfer(BaseModel):

@@ -14,6 +14,17 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/sudoskys/llm-kira",
     packages=setuptools.find_namespace_packages(),
-    install_requires=["httpx", "redis", "nltk", "Pillow", "numpy", "jieba", "transformers",
-                      "beautifulsoup4", "pydantic", "loguru", "elara", "openai-async"],
+    install_requires=[
+        "httpx",
+        "redis",
+        "nltk",
+        "Pillow",
+        "numpy",
+        "jieba",
+        "transformers",
+        "beautifulsoup4",
+        "pydantic",
+        "loguru",
+        "elara"
+    ],
 )

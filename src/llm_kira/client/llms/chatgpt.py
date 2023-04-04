@@ -6,25 +6,27 @@
 import math
 import time
 import random
-import tiktoken
+
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List, Literal
-
-from loguru import logger
-
-from ...creator.engine import PromptEngine
 # from loguru import logger
 
-from ...error import RateLimitError, ServiceUnavailableError
-from ...tool import openai as openai_api
-from pydantic import BaseModel, Field
-from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
 from ..llms.base import LlmBase, LlmBaseParam, Transfer
-from ..types import LlmReturn, Interaction, LlmException
-from ...tool.openai import ChatPrompt
+from llm_kira.types import LlmReturn, Interaction, LlmException
+
+from ...creator.engine import PromptEngine
+
+from ...error import RateLimitError, ServiceUnavailableError
+from ...component import openai_sdk as openai_api
+from ...component.openai_sdk import ChatPrompt
+
+import tiktoken
+from pydantic import BaseModel, Field
+from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
+
 from ...utils.chat import Sim
-from ...utils.data import DataUtils
-from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
+from ...utils.bucket import DataUtils
+from llm_kira.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
 
 
 class ChatGptParam(LlmBaseParam, BaseModel):
@@ -128,15 +130,15 @@ class ChatGpt(LlmBase):
 
     @staticmethod
     def parse_response(response) -> list:
-        REPLY = []
-        Choice = response.get("choices")
-        if Choice:
-            for item in Choice:
+        reply = []
+        _choice = response.get("choices")
+        if _choice:
+            for item in _choice:
                 _text = item["message"]["content"]
-                REPLY.append(_text)
-        if not REPLY:
-            REPLY = [""]
-        return REPLY
+                reply.append(_text)
+        if not reply:
+            reply = [""]
+        return reply
 
     @staticmethod
     def parse_usage(response) -> Optional[int]:

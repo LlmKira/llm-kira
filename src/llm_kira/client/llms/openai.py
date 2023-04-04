@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 1/23/23 7:00 PM
-# @FileName: openai.py
+# @FileName: openai_sdk.py
 # @Software: PyCharm
 # @Github    ：sudoskys
 import math
@@ -9,20 +9,19 @@ import random
 import tiktoken
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 
-from loguru import logger
-# from loguru import logger
+from llm_kira.utils.chat import Sim
+
+from llm_kira.types import LlmException
 
 from ...error import RateLimitError, ServiceUnavailableError
-from ...tool import openai as openai_api
+from ...component import openai_sdk as openai_api
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 from ..agent import Conversation
 from ...creator.engine import PromptEngine
 from ..llms.base import LlmBase, LlmBaseParam, Transfer
-from ..types import LlmReturn, LlmException
-from ...utils.chat import Sim
-from ...utils.data import DataUtils
-from ...utils.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
+from llm_kira.types import LlmReturn
+from ...utils.bucket import DataUtils
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -232,7 +231,10 @@ class OpenAi(LlmBase):
                        predict_tokens: int = 500
                        ) -> Transfer:
         """
-        转换提示引擎为当前 LLM 的数据输入
+        转换数据, 用于生成器, 生成器会自动调用此方法
+        :param prompt: 提示引擎
+        :param predict_tokens: 预测的 token 数量
+        :return: 转换后的数据
         """
         # Get
         _llm_result_limit = self.get_token_limit() - predict_tokens
@@ -240,8 +242,9 @@ class OpenAi(LlmBase):
         if isinstance(prompt, str):
             prompt_build = self.resize_sentence(prompt, token=predict_tokens)
             return Transfer(index=[prompt], data=prompt_build, raw=(None, None))
+        # 生成提示的输入和输出
         _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
-        # Prompt
+        # Build Prompt
         _prompt_list = []
         if not _prompt_input:
             raise LlmException("Input Is Empty")

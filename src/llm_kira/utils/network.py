@@ -43,8 +43,7 @@ def get_session(proxy: str = ""):
     session = __session_pool.get(loop, None)
     if session is None:
         if proxy:
-            proxies = {"all://": proxy}
-            session = httpx.AsyncClient(timeout=300, proxies=proxies)
+            session = httpx.AsyncClient(timeout=300, proxies=proxy)
         else:
             session = httpx.AsyncClient(timeout=300)
         __session_pool[loop] = session

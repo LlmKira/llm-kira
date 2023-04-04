@@ -1,6 +1,5 @@
 httpx
 redis
-nltk
 Pillow
 numpy
 jieba
@@ -9,3 +8,4 @@ beautifulsoup4
 pydantic
 loguru
 elara
+shortuuid

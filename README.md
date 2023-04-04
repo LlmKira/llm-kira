@@ -1,18 +1,23 @@
 # llm-kira
 
-A refactored version of the `openai-kira` specification. Use redis or a file database.
-
-Building ChatBot with LLMs.Using `async` requests.
-
 > Contributors welcomed.
+
+**轻量级多语言模型聊天机器人框架。**
+
+初始化一个监听器，我们就会
+
+只需要导入数据库配置，初始化 LLM 和 身份类，就可以使用。
+
+我们将向量存储器和向量加工器分离，这样可以让你自由选择向量加工器，而不用担心向量存储器的兼容性。
 
 ## Features
 
-* safely cut context
-* usage
-* async request api / curl
-* multi-Api Key load
-* self-design callback
+* 全异步高并发设计
+* 多 API 负载机制
+* 尽量简单的 API 设计
+* 管理对话数据和向量数据
+* 提供外部数据导入源设计
+* 快速裁切大量文本
 
 ## Basic Use
 
@@ -37,7 +42,7 @@ llm_kira.setting.webServerStopSentence = ["广告", "营销号"]  # 有默认值
 
 ## Demo
 
-**More examples of use in `lab/test.py`.**
+**!! More examples of use in `test/test.py`.**
 
 Take `openai` as an example
 
@@ -45,8 +50,8 @@ Take `openai` as an example
 import asyncio
 import random
 import llm_kira
-from llm_kira.client import Optimizer
-from llm_kira.client.types import PromptItem, Interaction
+from llm_kira.creator import Optimizer
+from llm_kira.types import PromptItem, Interaction
 from llm_kira.client.llms.openai import OpenAiParam
 from typing import List
 
@@ -128,6 +133,7 @@ async def chat():
 
 asyncio.run(chat())
 ```
+
 ## Life Status Builder
 
 ```python

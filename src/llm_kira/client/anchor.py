@@ -3,21 +3,21 @@
 # @FileName: anchor.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from typing import Union, Callable, List, Optional
 
-from loguru import logger
+from typing import Union, Callable
 
 # from loguru import logger
 from .llms.base import LlmBaseParam
 from .llms.openai import LlmBase
-from .types import LlmReturn, PromptItem
+
 from ..creator.engine import PromptEngine
 
-from ..error import LLMException
-
 # Completion
-from .types import ChatBotReturn
-from .agent import Conversation, MemoryManager
+from .agent import Conversation
+
+from ..types import ChatBotReturn
+from ..types import LlmReturn, PromptItem
+from ..error import LLMException
 
 
 class ChatBot(object):
@@ -29,11 +29,10 @@ class ChatBot(object):
         对话机器人代理端
         """
         self.profile = profile
-        self.memory_manager = MemoryManager(profile=profile)
         self.prompt = None
         self.llm = llm_model
         if llm_model is None:
-            raise LLMException("Whats your llm model?")
+            raise LLMException("llm model missing!")
 
     async def predict(self,
                       prompt: PromptEngine,
@@ -69,6 +68,7 @@ class ChatBot(object):
         if clean_prompt:
             prompt.clean(clean_prompt=True)
 
+        # Save
         self.prompt.build_interaction(
             ask=_prompt_index,
             response=PromptItem(
@@ -80,7 +80,6 @@ class ChatBot(object):
 
         # Re-Save
         self.prompt.save_interaction()
-        self.prompt.save_knowledge()
 
         # Return
         return ChatBotReturn(

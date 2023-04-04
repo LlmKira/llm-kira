@@ -7,11 +7,10 @@ import hashlib
 from typing import List, Union
 from loguru import logger
 
-from .types import Interaction
-from ..utils.data import MsgFlow
+from ..types import Interaction
 
 
-def getStrId(string):
+def get_hex(string):
     bytes_str = string.encode('utf-8')
     md5 = hashlib.md5()
     md5.update(bytes_str)
@@ -35,7 +34,7 @@ class Conversation(object):
         """
         self.hash_secret = "LLM"
         if not conversation_id:
-            conversation_id = getStrId(start_name)
+            conversation_id = get_hex(start_name)
             logger.warning("conversation_id empty!!!")
         self.conversation_id = str(conversation_id)
         self.start_name = start_name.strip(":").strip("：")
@@ -64,17 +63,19 @@ class MemoryManager(object):
                  ):
         """
         记忆管理器
+        :param profile: Conversation 类型，或者 conversation_id
+        :param area: 后缀，用于区分不同的记忆空间
         """
         if not isinstance(profile, int):
             profile = profile.conversation_id
         self._DataManager = MsgFlow(uid=f"{profile}{area}")
 
-    def reset_chat(self):
+    def reset_bucket(self):
         return self._DataManager.forget()
 
-    def read_context(self) -> List[Interaction]:
+    def read_bucket(self) -> List[Interaction]:
         return self._DataManager.read()
 
-    def save_context(self, message: List[Interaction], override: bool = True):
+    def save_bucket(self, message: List[Interaction], override: bool = True):
         self._DataManager.save(interaction_flow=message, override=override)
         return message
