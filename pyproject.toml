@@ -35,6 +35,7 @@ inscriptis = "^2.3.2"
 openai = "^0.26.5"
 shortuuid = "^1.0.11"
 scikit-learn = "^1.2.1"
+python-dotenv = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]
