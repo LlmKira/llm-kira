@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import os
 from typing import Dict, Union
@@ -17,6 +18,18 @@ except Exception as e:
     pass
 
 
+def check_model(name: str) -> bool:
+    # 查看模型是否为 0 字节
+    target_path = os.path.join(FTLANG_CACHE, name)
+    if os.path.exists(target_path):
+        if os.path.getsize(target_path) > 0:
+            return True
+        else:
+            # 0 字节，删除
+            os.remove(target_path)
+    return False
+
+
 def download_model(name: str) -> str:
     target_path = os.path.join(FTLANG_CACHE, name)
     if not os.path.exists(target_path):
@@ -34,6 +47,7 @@ def get_or_load_model(low_memory=False):
     if low_memory:
         model = models.get("low_mem", None)
         if not model:
+            check_model("lid.176.ftz")
             model_path = download_model("lid.176.ftz")
             model = fasttext.load_model(model_path)
             models["low_mem"] = model
@@ -41,6 +55,7 @@ def get_or_load_model(low_memory=False):
     else:
         model = models.get("high_mem", None)
         if not model:
+            check_model("lid.176.ftz")
             model_path = download_model("lid.176.bin")
             model = fasttext.load_model(model_path)
             models["high_mem"] = model

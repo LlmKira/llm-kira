@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from loguru import logger
 
 
@@ -13,14 +14,18 @@ class DetectSentence(object):
         :param sentence: sentence
         :return: 两位大写语言代码 (EN, ZH, JA, KO, FR, DE, ES, ....)
         """
+        # 如果全部是空格
+        if sentence.isspace() or not sentence:
+            return ""
         try:
-            from .fasttext_langdetect import detect
-            lang_type = detect(text=sentence.replace("\n", "").replace("\r", ""), low_memory=True).get("lang").upper()
+            from .. import langdetect_fasttext
+            lang_type = langdetect_fasttext.detect(text=sentence.replace("\n", "").replace("\r", ""),
+                                                   low_memory=True).get("lang").upper()
         except Exception as e:
             # handle error
             logger.trace(e)
-            from .unicode_langdetect import detect
-            lang_type = detect(text=sentence.replace("\n", "").replace("\r", ""))[0][0].upper()
+            from .. import langdetect_unicode
+            lang_type = langdetect_unicode.detect(text=sentence.replace("\n", "").replace("\r", ""))[0][0].upper()
         return lang_type
 
     @staticmethod

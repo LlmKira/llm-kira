@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .langdetect import LangDetector
 
 __langDetector = LangDetector()

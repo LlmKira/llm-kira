@@ -110,8 +110,8 @@ try:
     # 检查连接
     if not check_redis_dsn(cacheSetting.redisDsn):
         cache: RedisClientWrapper = RedisClientWrapper(cacheSetting.redisDsn)
-    else:
-        cache: ElaraClientWrapper = ElaraClientWrapper(cacheSetting.dbFile)
+    # else:
+    #    cache: ElaraClientWrapper = ElaraClientWrapper(cacheSetting.dbFile)
 except Exception as e:
     logger.error(e)
     raise Exception("缓存初始化失败")
