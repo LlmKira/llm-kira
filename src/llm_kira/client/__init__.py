@@ -4,6 +4,5 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 
-from .llms import openai
 from .anchor import ChatBot
-from .agent import Conversation, MemoryManager
+from .agent import Conversation
