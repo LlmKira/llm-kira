@@ -4,7 +4,7 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 
-class LLMException(BaseException):
+class LlmException(BaseException):
     """
     Base class for all exceptions raised by this library.
     """

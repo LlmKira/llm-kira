@@ -5,7 +5,7 @@
 # @Github    ：sudoskys
 import time
 import shortuuid
-from typing import Optional
+from typing import Optional, List, Any, Tuple
 from typing import List
 
 from pydantic import BaseModel, validator, root_validator
@@ -13,10 +13,6 @@ from pydantic import BaseModel, validator, root_validator
 
 class Vector(BaseModel):
     vector: List[float]
-
-    @property
-    def top_vector(self):
-        return self.vector
 
 
 class PromptItem(BaseModel):
@@ -102,3 +98,9 @@ class ChatBotReturn(BaseModel):
     llm: LlmReturn
     ask: str
     reply: str
+
+
+class LlmTransfer(BaseModel):
+    index: List[str]
+    data: Any
+    raw: Tuple[Any, Any]
