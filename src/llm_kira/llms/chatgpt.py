@@ -4,29 +4,28 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import math
-import time
 import random
-
+import time
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List, Literal
-# from loguru import logger
-
-from ..agent import Conversation
-from ..llms.base import LlmBase, LlmBaseParam, Transfer
-from llm_kira.types import LlmReturn, Interaction, LlmException
-
-from ...creator.engine import PromptEngine
-
-from ...error import RateLimitError, ServiceUnavailableError
-from ...component import openai_sdk as openai_api
-from ...component.openai_sdk import ChatPrompt
 
 import tiktoken
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 
-from ...utils.chat import Sim
-from ...utils.bucket import DataUtils
-from llm_kira.setting import llmRetryAttempt, llmRetryTime, llmRetryTimeMax, llmRetryTimeMin
+from llm_kira.client.agent import Conversation
+from llm_kira.component import openai_sdk as openai_api
+from llm_kira.component.openai_sdk import ChatPrompt
+from llm_kira.creator.engine import PromptEngine
+from llm_kira.error import RateLimitError, ServiceUnavailableError
+from llm_kira.llms.base import LlmBase, LlmBaseParam
+from llm_kira.setting import RetrySettings
+from llm_kira.types import LlmReturn, Interaction, LlmTransfer
+from llm_kira.utils.bucket import DataUtils
+from ..component.nlp_utils.sim import Sim
+from ..error import LlmException
+
+
+# from loguru import logger
 
 
 class ChatGptParam(LlmBaseParam, BaseModel):
@@ -234,15 +233,15 @@ class ChatGpt(LlmBase):
     async def transfer(self,
                        prompt: Union[PromptEngine, str],
                        predict_tokens: int = 2000
-                       ) -> Transfer:
+                       ) -> LlmTransfer:
         """
         转换提示引擎为当前 LLM 的数据输入
         """
         _llm_result_limit = self.get_token_limit() - predict_tokens
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
         if isinstance(prompt, str):
-            return Transfer(index=[prompt], data=[ChatPrompt(role="user", content=prompt)],
-                            raw=(None, None))
+            return LlmTransfer(index=[prompt], data=[ChatPrompt(role="user", content=prompt)],
+                               raw=(None, None))
         _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
         _prompt: List[Interaction]
         # Get
@@ -264,16 +263,18 @@ class ChatGpt(LlmBase):
             _content = item[1]
             if _content != prompt.description:
                 _message_.append(ChatPrompt(role=_role, content=_content))
-        return Transfer(index=[_prompt_], data=_message_, raw=(_prompt_input, _prompt))
+        return LlmTransfer(index=[_prompt_], data=_message_, raw=(_prompt_input, _prompt))
 
     @retry(retry=retry_if_exception_type((RateLimitError,
                                           ServiceUnavailableError)),
-           stop=stop_after_attempt(llmRetryAttempt),
-           wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
+           stop=stop_after_attempt(RetrySettings.retry_attempt),
+           wait=wait_exponential(multiplier=RetrySettings.retry_time,
+                                 min=RetrySettings.retry_time_min,
+                                 max=RetrySettings.retry_time_max),
            reraise=True,
            )
     async def run(self,
-                  prompt: Union[Transfer, PromptEngine, str],
+                  prompt: Union[LlmTransfer, PromptEngine, str],
                   llm_param: ChatGptParam,
                   predict_tokens: int = 500,
                   validate: Union[List[str], None] = None,
@@ -293,7 +294,7 @@ class ChatGpt(LlmBase):
         :param rank_name:
         :return:
         """
-        if not isinstance(prompt, Transfer):
+        if not isinstance(prompt, LlmTransfer):
             prompt = await self.transfer(prompt=prompt, predict_tokens=predict_tokens)
         _message_list = prompt.data
         _prompt_input = prompt.index[0]

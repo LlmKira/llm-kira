@@ -6,15 +6,11 @@
 import json
 import os
 from abc import abstractmethod, ABC
-from typing import Union, Optional, Any, Tuple, List
+from typing import Union, Optional, Any, List
+
 from pydantic import BaseModel
-from llm_kira.types import LlmReturn
 
-
-class Transfer(BaseModel):
-    index: List[str]
-    data: Any
-    raw: Tuple[Any, Any]
+from llm_kira.types import LlmReturn, LlmTransfer
 
 
 def mix_result(_item):
@@ -22,7 +18,7 @@ def mix_result(_item):
     使用遍历方法的混淆器
     """
     path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "vocab.json")
+        os.path.join(os.path.dirname(__file__), "../client", "vocab.json")
     )
     with open(path, encoding="utf8") as f:
         target = json.loads(f.read())
@@ -91,7 +87,7 @@ class LlmBase(ABC):
     async def transfer(self,
                        prompt: Any,
                        predict_tokens: int = 2000
-                       ) -> Transfer:
+                       ) -> LlmTransfer:
         pass
 
     @abstractmethod
