@@ -77,6 +77,9 @@ class OpenAiParam(LlmBaseParam, BaseModel):
 class AzureOpenAI(LlmBase):
 
     def __init__(self, profile: Conversation,
+                 resource_name: str,
+                 deployment_id: str,
+                 api_version: str,
                  api_key: Union[str, list] = None,
                  token_limit: int = 3700,
                  auto_penalty: bool = False,
@@ -85,6 +88,8 @@ class AzureOpenAI(LlmBase):
                  ):
         """
         Openai LLM 的方法类集合
+        :param resource_name: 资源名称
+        :param deployment_id:
         :param api_key: api key
         :param token_limit: 总限制
         :param call_func: 回调
@@ -92,6 +97,9 @@ class AzureOpenAI(LlmBase):
         """
         self.auto_penalty = auto_penalty
         self.profile = profile
+        self.resource_name = resource_name
+        self.deployment_id = deployment_id
+        self.api_version = api_version
         # if api_key is None:
         #     api_key = setting.openaiApiKey
         if isinstance(api_key, list):
@@ -355,7 +363,7 @@ class AzureOpenAI(LlmBase):
             _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
 
         # 自维护 Api 库
-        response = await azure_openai_sdk.Completion(api_key=self.__api_key, call_func=self.__call_func).create(
+        response = await azure_openai_sdk.Completion(resource_name=self.resource_name, api_version=self.api_version, deployment_id=self.deployment_id, api_key=self.__api_key, call_func=self.__call_func).create(
             **_request_arg
         )
 
