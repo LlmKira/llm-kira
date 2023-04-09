@@ -1,22 +1,22 @@
 import math
-import time
 import random
-import tiktoken
+import time
 from typing import Union, Optional, Callable, Any, Dict, Tuple, Mapping, List
 
-from llm_kira.utils.chat import Sim
-
-from llm_kira.types import LlmException
-
-from ...error import RateLimitError, ServiceUnavailableError
-from ...component import azure_openai_sdk as azure_openai_sdk
+import tiktoken
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
-from ..agent import Conversation
-from ...creator.engine import PromptEngine
-from ..llms.base import LlmBase, LlmBaseParam, Transfer
-from llm_kira.types import LlmReturn
-from ...utils.bucket import DataUtils
+
+from llm_kira.client.agent import Conversation
+from llm_kira.component import azure_openai_sdk as azure_openai_sdk
+from llm_kira.creator.engine import PromptEngine
+from llm_kira.error import RateLimitError, ServiceUnavailableError
+from llm_kira.setting import RetrySettings
+from llm_kira.types import LlmReturn, LlmTransfer
+from llm_kira.utils.bucket import DataUtils
+from ..component.nlp_utils.sim import Sim
+from ..error import LlmException
+from ..llms.base import LlmBase, LlmBaseParam
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -232,7 +232,7 @@ class AzureOpenAI(LlmBase):
     async def transfer(self,
                        prompt: Union[PromptEngine, str],
                        predict_tokens: int = 500
-                       ) -> Transfer:
+                       ) -> LlmTransfer:
         """
         转换数据, 用于生成器, 生成器会自动调用此方法
         :param prompt: 提示引擎
@@ -244,7 +244,7 @@ class AzureOpenAI(LlmBase):
         _llm_result_limit = _llm_result_limit if _llm_result_limit > 0 else 1
         if isinstance(prompt, str):
             prompt_build = self.resize_sentence(prompt, token=predict_tokens)
-            return Transfer(index=[prompt], data=prompt_build, raw=(None, None))
+            return LlmTransfer(index=[prompt], data=prompt_build, raw=(None, None))
         # 生成提示的输入和输出
         _prompt_input, _prompt = prompt.build_prompt(predict_tokens=_llm_result_limit)
         # Build Prompt
@@ -255,15 +255,17 @@ class AzureOpenAI(LlmBase):
             _prompt_list.extend(item.content)
         prompt_build = "\n".join(_prompt_list) + f"\n{self.profile.restart_name}:"
         prompt_build = self.resize_sentence(prompt_build, token=self.get_token_limit())
-        return Transfer(index=[_prompt_input.prompt], data=prompt_build, raw=(_prompt_input, _prompt))
+        return LlmTransfer(index=[_prompt_input.prompt], data=prompt_build, raw=(_prompt_input, _prompt))
 
     @retry(retry=retry_if_exception_type((RateLimitError,
                                           ServiceUnavailableError)),
-           stop=stop_after_attempt(llmRetryAttempt),
-           wait=wait_exponential(multiplier=llmRetryTime, min=llmRetryTimeMin, max=llmRetryTimeMax),
+           stop=stop_after_attempt(RetrySettings.retry_attempt),
+           wait=wait_exponential(multiplier=RetrySettings.retry_time,
+                                 min=RetrySettings.retry_time_min,
+                                 max=RetrySettings.retry_time_max),
            reraise=True)
     async def run(self,
-                  prompt: Union[Transfer, PromptEngine, str],
+                  prompt: Union[LlmTransfer, PromptEngine, str],
                   llm_param: OpenAiParam,
                   predict_tokens: int = 500,
                   validate: Union[List[str], None] = None,
@@ -288,7 +290,7 @@ class AzureOpenAI(LlmBase):
             "n": 1
         }
         _request_arg: dict
-        if not isinstance(prompt, Transfer):
+        if not isinstance(prompt, LlmTransfer):
             prompt = await self.transfer(prompt=prompt, predict_tokens=predict_tokens)
         _prompt_input = prompt.index[0]
         _prompt_ = prompt.data
@@ -363,7 +365,9 @@ class AzureOpenAI(LlmBase):
             _request_arg["temperature"] = _temperature if 0 < _temperature < 1 else 0.9
 
         # 自维护 Api 库
-        response = await azure_openai_sdk.Completion(resource_name=self.resource_name, api_version=self.api_version, deployment_id=self.deployment_id, api_key=self.__api_key, call_func=self.__call_func).create(
+        response = await azure_openai_sdk.Completion(resource_name=self.resource_name, api_version=self.api_version,
+                                                     deployment_id=self.deployment_id, api_key=self.__api_key,
+                                                     call_func=self.__call_func).create(
             **_request_arg
         )
 

@@ -7,17 +7,14 @@
 from typing import Union, Callable
 
 # from loguru import logger
-from .llms.base import LlmBaseParam
-from .llms.openai import LlmBase
-
-from ..creator.engine import PromptEngine
-
+from ..llms.base import LlmBaseParam
+from ..llms.openai import LlmBase
 # Completion
 from .agent import Conversation
-
+from ..creator.engine import PromptEngine
+from ..error import LlmException
 from ..types import ChatBotReturn
 from ..types import LlmReturn, PromptItem
-from ..error import LLMException
 
 
 class ChatBot(object):
@@ -32,7 +29,7 @@ class ChatBot(object):
         self.prompt = None
         self.llm = llm_model
         if llm_model is None:
-            raise LLMException("llm model missing!")
+            raise LlmException("llm model missing!")
 
     async def predict(self,
                       prompt: PromptEngine,
@@ -54,7 +51,7 @@ class ChatBot(object):
             self.llm.parse_reply = parse_reply
         if predict_tokens > self.llm.get_token_limit():
             # Or Auto Cut?
-            raise LLMException("Why your predict token > set token limit?")
+            raise LlmException("Why your predict token > set token limit?")
 
         # Get Question Index
         _prompt_index = self.prompt.prompt
