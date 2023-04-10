@@ -3,6 +3,12 @@
 # @Author  : sudoskys
 # @File    : elara.py
 # @Software: PyCharm
+import json
+
+import elara
+
+
+# TODO 继承我们的抽象类
 class ElaraWorker:
     """
     Redis 数据基类

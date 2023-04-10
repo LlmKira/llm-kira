@@ -11,7 +11,7 @@ from . import Optimizer
 from .base import BaseEngine
 from ..client.agent import Conversation, MemoryManager
 from ..schema import LlmBase, PromptItem, Interaction
-from ..utils.bucket import MsgFlow
+from llm_kira.creator.bucket import MsgFlow
 
 
 class PromptEngine(BaseEngine):

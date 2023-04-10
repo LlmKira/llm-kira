@@ -12,7 +12,7 @@ from operator import attrgetter
 from typing import List, Tuple
 import datetime
 from llm_kira.schema import PromptItem, Interaction, InteractionWeight
-from llm_kira.utils.bucket import MsgFlow
+from llm_kira.creator.bucket import MsgFlow
 
 
 def random_string(length):

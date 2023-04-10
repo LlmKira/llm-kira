@@ -15,7 +15,7 @@ from ..error import LlmException
 from ..error import RateLimitError, ServiceUnavailableError
 from ..schema import LlmBaseParam, LlmBase, LlmReturn, LlmTransfer
 from ..setting import RetrySettings
-from ..utils.bucket import DataUtils
+from llm_kira.creator.bucket import DataUtils
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):

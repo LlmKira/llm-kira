@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 
 from ..setting import RetrySettings
-from ..utils.bucket import DataUtils
+from llm_kira.creator.bucket import DataUtils
 from ..client.agent import Conversation
 from ..component import openai_sdk as openai_api
 from ..component.nlp_utils.sim import Sim

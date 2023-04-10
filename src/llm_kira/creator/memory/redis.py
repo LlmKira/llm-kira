@@ -8,8 +8,8 @@ from typing import List, Optional
 
 from loguru import logger
 
-from ..schema import Interaction, MemoryBaseLoader
-from ..setting import cacheSetting
+from llm_kira.schema import Interaction, MemoryBaseLoader
+from llm_kira.setting import cacheSetting
 
 
 class RedisMessageLoader(MemoryBaseLoader):
