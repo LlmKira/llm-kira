@@ -1,38 +1,42 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2023/4/11 上午12:12
-# @Author  : sudoskys
-# @File    : elara.py
-# @Software: PyCharm
+import elara
 import json
 
-import elara
+from typing import List, Optional
+
+from loguru import logger
+
+from ..schema import Interaction, MemoryBaseLoader
+from ..setting import cacheSetting
 
 
-# TODO 继承我们的抽象类
-class ElaraWorker:
-    """
-    Redis 数据基类
-    不想用 redis 可以自动改动此类，换用其他方法。应该比较简单。
-    """
+class ElaraMessageLoader(MemoryBaseLoader):
+    def __init__(self, session_id: str, path: str, key_prefix: str = "llm_kira_message_store:",
+                 ttl: Optional[int] = None):
+        super().__init__(session_id, key_prefix)
+        self.db = elara.exe(path)
+        self.session_id = session_id
+        self.key_prefix = key_prefix
+        self.ttl = ttl
 
-    def __init__(self, filepath, prefix='llm_kira_'):
-        self.redis = elara.exe(filepath)
-        self.prefix = prefix
+    @property
+    def key(self) -> str:
+        """Construct the record key to use"""
+        return self.key_prefix + self.session_id
 
-    def set_key(self, key, obj):
-        self.redis.set(self.prefix + str(key), json.dumps(obj, ensure_ascii=False))
-        self.redis.commit()
-        return True
+    @property
+    def message(self) -> List[Interaction]:  # type: ignore
+        """Retrieve the messages from Redis"""
+        _items = self.db.lrange(self.key, 0, -1)
+        messages = [Interaction(**json.loads(m.decode("utf-8"))) for m in _items[::-1]]
+        return messages
 
-    def delete_key(self, key):
-        self.redis.rem(key)
-        return True
+    def append(self, message: Interaction) -> None:
+        """Append the message to the record in Redis"""
+        self.db.lpush(self.key, message.json())
+        if self.ttl:
+            self.db.expire(self.key, self.ttl)
 
-    def get_key(self, key):
-        result = self.redis.get(self.prefix + str(key))
-        if result:
-            return json.loads(result)
-        else:
-            return {}
-
-        # TODO
+    def clear(self) -> None:
+        """Clear session memory from Redis"""
+        self.db.delete(self.key)
+        
