@@ -11,10 +11,7 @@ from .agent import Conversation
 from ..creator.engine import PromptEngine
 from ..error import LlmException
 # from loguru import logger
-from ..llms.base import LlmBaseParam
-from ..llms.openai import LlmBase
-from ..types import ChatBotReturn
-from ..types import LlmReturn, PromptItem
+from ..schema import LlmBaseParam, LlmBase, PromptItem, LlmReturn, ChatBotReturn
 
 
 class ChatBot(object):

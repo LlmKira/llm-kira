@@ -45,7 +45,7 @@ import asyncio
 import random
 import llm_kira
 from llm_kira.creator import Optimizer
-from llm_kira.types import PromptItem, Interaction
+from llm_kira.schema import PromptItem, Interaction
 from llm_kira.llms import OpenAiParam
 from typing import List
 

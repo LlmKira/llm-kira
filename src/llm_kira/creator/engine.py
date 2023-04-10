@@ -10,8 +10,7 @@ from loguru import logger
 from . import Optimizer
 from .base import BaseEngine
 from ..client.agent import Conversation, MemoryManager
-from llm_kira.llms.base import LlmBase
-from llm_kira.types import Interaction, PromptItem
+from ..schema import LlmBase, PromptItem, Interaction
 from ..utils.bucket import MsgFlow
 
 

@@ -11,7 +11,7 @@ import time
 from operator import attrgetter
 from typing import List, Tuple
 import datetime
-from llm_kira.types import Interaction, PromptItem, InteractionWeight
+from llm_kira.schema import PromptItem, Interaction, InteractionWeight
 from llm_kira.utils.bucket import MsgFlow
 
 
