@@ -18,7 +18,7 @@ from ..setting import RetrySettings
 from llm_kira.creator.bucket import DataUtils
 
 
-class OpenAiParam(LlmBaseParam, BaseModel):
+class AzureOpenAiParam(LlmBaseParam, BaseModel):
     model_name: str = "text-davinci-003"
     """Model name to use."""
     temperature: float = 0.8
