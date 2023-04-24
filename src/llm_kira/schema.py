@@ -205,18 +205,3 @@ class MemoryBaseLoader(object):
 
     def clear(self) -> None:
         self._memory = []
-
-# def mix_result(_item):
-#     """
-#     使用遍历方法的混淆器
-#     此函数被禁用
-#     """
-#     path = os.path.abspath(
-#         os.path.join(os.path.dirname(__file__), "../client", "vocab.json")
-#     )
-#     with open(path, encoding="utf8") as f:
-#         target = json.loads(f.read())
-#     # 遍历
-#     for key, value in target.items():
-#         _item = _item.replace(key, value)
-#     return _item
