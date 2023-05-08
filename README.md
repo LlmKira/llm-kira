@@ -1,17 +1,19 @@
 # llm-kira
 
-
 ## Refactoring
 
 > Contributors welcomed.
 
-**轻量级多语言模型异步聊天机器人框架。**
+**女生自用 99 新轻量级多语言模型异步聊天机器人框架。**
 
 ## Features
 
-* 全异步高并发设计
+* 原子化抽象组合设计
 * 尽量简单的 API 设计
 * 管理对话数据和向量数据
+* 全异步设计，考虑高并发
+* 尽量简化，并选用可靠的第三方库
+* 实验性的，为应用而生的不稳定设计
 
 ## Basic Use
 
@@ -41,6 +43,7 @@ llm_kira.setting.webServerStopSentence = ["广告", "营销号"]  # 有默认值
 Take `openai` as an example
 
 ```python
+import llm_kira.schema
 import asyncio
 import random
 import llm_kira
@@ -53,7 +56,7 @@ openaiApiKey = ["key1", "key2"]
 openaiApiKey: List[str]
 
 receiver = llm_kira.client
-conversation = receiver.Conversation(
+conversation = llm_kira.schema.Conversation(
     start_name="Human:",
     restart_name="AI:",
     conversation_id=10093,  # random.randint(1, 10000000),
@@ -131,10 +134,11 @@ asyncio.run(chat())
 ## Life Status Builder
 
 ```python
+import llm_kira.schema
 import llm_kira
 from llm_kira.creator.think import ThinkEngine, Hook
 
-conversation = llm_kira.client.Conversation(
+conversation = llm_kira.schema.Conversation(
     start_name="Human:",
     restart_name="AI:",
     conversation_id=10093,  # random.randint(1, 10000000),

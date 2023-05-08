@@ -24,7 +24,7 @@ loguru = "^0.6.0"
 elara = "^0.5.4"
 openai-async = "^0.0.2"
 numpy = "^1.22.1"
-tiktoken = "^0.1.2"
+tiktoken = "^0.3.2"
 # pycurl = "^7.43.0.6"
 duckduckgo-search = "2.8.0"
 tenacity = "^8.2.0"
@@ -36,6 +36,7 @@ openai = "^0.26.5"
 shortuuid = "^1.0.11"
 scikit-learn = "^1.2.1"
 python-dotenv = "^1.0.0"
+docarray = "^0.30.0"
 
 [build-system]
 requires = ["poetry-core"]
