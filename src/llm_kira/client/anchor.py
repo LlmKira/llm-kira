@@ -11,10 +11,7 @@ from .agent import Conversation
 from ..creator.engine import PromptEngine
 from ..error import LlmException
 # from loguru import logger
-from ..llms.base import LlmBaseParam
-from ..llms.openai import LlmBase
-from ..types import ChatBotReturn
-from ..types import LlmReturn, PromptItem
+from ..schema import LlmBaseParam, LlmBase, PromptItem, LlmReturn, ChatBotReturn
 
 
 class ChatBot(object):
@@ -24,6 +21,8 @@ class ChatBot(object):
                  ):
         """
         对话机器人代理端
+        :param profile: Conversation
+        :param llm_model: LlmBase 类型，大语言模型
         """
         self.profile = profile
         self.prompt = None
@@ -41,7 +40,7 @@ class ChatBot(object):
         """
         :param prompt: PromptEngine
         :param predict_tokens: 预测 Token 位
-        :param llm_param: 大语言模型参数
+        :param llm_param: 大语言模型对应的参数样式
         :param parse_reply: Callable[[list], str] 覆写解析方法
         :param clean_prompt:
         """

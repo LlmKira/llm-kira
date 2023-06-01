@@ -4,10 +4,8 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 import hashlib
-from typing import List, Union
-from loguru import logger
 
-from ..types import Interaction
+from loguru import logger
 
 
 def get_hex(string):
@@ -54,5 +52,3 @@ class Conversation(object):
             self.__usage = usage
         else:
             self.__usage += usage
-
-

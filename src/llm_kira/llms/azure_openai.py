@@ -7,19 +7,18 @@ import tiktoken
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 
-from llm_kira.client.agent import Conversation
-from llm_kira.component import azure_openai_sdk as azure_openai_sdk
-from llm_kira.creator.engine import PromptEngine
-from llm_kira.error import RateLimitError, ServiceUnavailableError
-from llm_kira.setting import RetrySettings
-from llm_kira.types import LlmReturn, LlmTransfer
-from llm_kira.utils.bucket import DataUtils
+from ..client.agent import Conversation
+from ..component import azure_openai_sdk as azure_openai_sdk
 from ..component.nlp_utils.sim import Sim
+from ..creator.engine import PromptEngine
 from ..error import LlmException
-from ..llms.base import LlmBase, LlmBaseParam
+from ..error import RateLimitError, ServiceUnavailableError
+from ..schema import LlmBaseParam, LlmBase, LlmReturn, LlmTransfer
+from ..setting import RetrySettings
+from llm_kira.creator.bucket import DataUtils
 
 
-class OpenAiParam(LlmBaseParam, BaseModel):
+class AzureOpenAiParam(LlmBaseParam, BaseModel):
     model_name: str = "text-davinci-003"
     """Model name to use."""
     temperature: float = 0.8

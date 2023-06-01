@@ -8,7 +8,7 @@ import random
 import time
 from typing import List
 
-from llm_kira.client.llms import ChatGptParam
+from llm_kira.llms import ChatGptParam
 from llm_kira.radio.anchor import SearchCraw
 from loguru import logger
 
@@ -17,8 +17,8 @@ import src.llm_kira as llm_kira
 import setting
 from src.llm_kira.creator.think import ThinkEngine, Hook
 from llm_kira.creator import Optimizer
-from src.llm_kira.client.llms.openai import OpenAiParam
-from llm_kira.types import PromptItem, Interaction
+from llm_kira.llms import OpenAiParam
+from llm_kira.schema import PromptItem, Interaction
 
 import sys
 

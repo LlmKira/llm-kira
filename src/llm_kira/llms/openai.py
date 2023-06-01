@@ -12,16 +12,14 @@ import tiktoken
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 
-from llm_kira.client.agent import Conversation
-from llm_kira.component import openai_sdk as openai_api
-from llm_kira.component.nlp_utils.sim import Sim
-from llm_kira.creator.engine import PromptEngine
-from llm_kira.error import RateLimitError, ServiceUnavailableError, LlmException
-from llm_kira.llms.base import LlmBase, LlmBaseParam
-from llm_kira.setting import RetrySettings
-from llm_kira.types import LlmReturn
-from llm_kira.types import LlmTransfer
-from llm_kira.utils.bucket import DataUtils
+from ..client.agent import Conversation
+from ..component import openai_sdk as openai_api
+from ..component.nlp_utils.sim import Sim
+from ..creator.engine import PromptEngine
+from ..error import RateLimitError, ServiceUnavailableError, LlmException
+from ..schema import LlmBaseParam, LlmBase, LlmReturn, LlmTransfer
+from ..setting import RetrySettings
+from llm_kira.creator.bucket import DataUtils
 
 
 class OpenAiParam(LlmBaseParam, BaseModel):
@@ -337,7 +335,7 @@ class OpenAi(LlmBase):
         """
 
         if _request_arg.get("frequency_penalty") == 0:
-            _request_arg.pop("frequency_penalty", None)\
+            _request_arg.pop("frequency_penalty", None)
 
         if _request_arg.get("presence_penalty") == 0:
             _request_arg.pop("presence_penalty", None)

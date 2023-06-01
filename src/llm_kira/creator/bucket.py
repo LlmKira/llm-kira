@@ -4,12 +4,14 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 
+# TODO 删除
+
 import ast
 import json
 import re
 from typing import Union, Optional, List
 from loguru import logger
-from llm_kira.types import Interaction
+from llm_kira.schema import Interaction
 from pydantic import BaseModel
 
 redis_installed = True
@@ -90,31 +92,7 @@ class RedisWorker:
         return list_get
 
 
-class ElaraWorker:
-    """
-    Redis 数据基类
-    不想用 redis 可以自动改动此类，换用其他方法。应该比较简单。
-    """
 
-    def __init__(self, filepath, prefix='llm_kira_'):
-        self.redis = elara.exe(filepath)
-        self.prefix = prefix
-
-    def set_key(self, key, obj):
-        self.redis.set(self.prefix + str(key), json.dumps(obj, ensure_ascii=False))
-        self.redis.commit()
-        return True
-
-    def delete_key(self, key):
-        self.redis.rem(key)
-        return True
-
-    def get_key(self, key):
-        result = self.redis.get(self.prefix + str(key))
-        if result:
-            return json.loads(result)
-        else:
-            return {}
 
 
 class DataUtils(object):

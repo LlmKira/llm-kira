@@ -12,17 +12,16 @@ import tiktoken
 from pydantic import BaseModel, Field
 from tenacity import retry_if_exception_type, retry, stop_after_attempt, wait_exponential
 
-from llm_kira.client.agent import Conversation
-from llm_kira.component import openai_sdk as openai_api
-from llm_kira.component.openai_sdk import ChatPrompt
-from llm_kira.creator.engine import PromptEngine
-from llm_kira.error import RateLimitError, ServiceUnavailableError
-from llm_kira.llms.base import LlmBase, LlmBaseParam
-from llm_kira.setting import RetrySettings
-from llm_kira.types import LlmReturn, Interaction, LlmTransfer
-from llm_kira.utils.bucket import DataUtils
+from ..setting import RetrySettings
+from llm_kira.creator.bucket import DataUtils
+from ..client.agent import Conversation
+from ..component import openai_sdk as openai_api
 from ..component.nlp_utils.sim import Sim
+from ..component.openai_sdk import ChatPrompt
+from ..creator.engine import PromptEngine
 from ..error import LlmException
+from ..error import RateLimitError, ServiceUnavailableError
+from ..schema import LlmBaseParam, LlmBase, Interaction, LlmReturn, LlmTransfer
 
 
 # from loguru import logger

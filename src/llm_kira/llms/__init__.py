@@ -3,12 +3,15 @@
 # @FileName: __init__.py.py
 # @Software: PyCharm
 # @Github    ：sudoskys
-from .openai import OpenAi, OpenAiParam
+from .azure_openai import AzureOpenAI, AzureOpenAiParam
 from .chatgpt import ChatGpt, ChatGptParam
+from .openai import OpenAi, OpenAiParam
 
 __all__ = [
     "OpenAi",
     "OpenAiParam",
     "ChatGptParam",
     "ChatGpt",
+    "AzureOpenAiParam",
+    "AzureOpenAI"
 ]
