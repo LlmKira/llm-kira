@@ -3,31 +3,27 @@
 # @Author  : sudoskys
 # @File    : schema.py
 # @Software: PyCharm
+import hashlib
 import time
-from abc import ABC, abstractmethod
-from typing import Union, Any, List, Optional, Tuple
+from typing import Any, Optional, Tuple
+from typing import List, Dict
 
-import shortuuid
-from pydantic import BaseModel, root_validator, validator
-
-
-class Vector(BaseModel):
-    vector: List[float]
+from loguru import logger
+from pydantic import BaseModel
+from pydantic import root_validator, validator
 
 
-class PromptItem(BaseModel):
-    id: str = str(shortuuid.uuid())
+class MetaData(BaseModel):
     start: str = ""
-    text: str
     connect_words: str = ":"
-    vector: Optional[Vector] = None
-
-    @property
-    def prompt(self):
-        return f"{self.start}{self.connect_words}{self.text}"
+    text: str
+    timestamp: int = int(time.time())
 
     @root_validator
     def start_check(cls, values):
+        """
+        校验起始函数
+        """
         start, connect_words = values.get('start'), values.get('connect_words')
         if len(start) > 50:
             raise ValueError('start name too long')
@@ -39,38 +35,33 @@ class PromptItem(BaseModel):
 
     @validator('text')
     def text_check(cls, v):
+        """
+        检查原始文本
+        """
         if not v:
             return "None"
         return v
 
 
-class Interaction(BaseModel):
-    single: bool = False  # 是否单条标示
-    ask: PromptItem
-    reply: Optional[PromptItem]
-    time: int = int(time.time() * 1000)
+class Message(BaseModel):
+    metadata: MetaData = MetaData(text="Hello, world!")
+    ttl: int = -1
+    timestamp: int = int(time.time())
+
+    def get_vector(self, area: str = "default"):
+        if self.encoder is None:
+            return None
+        if area not in self.vector:
+            self.vector[area] = self.encoder(self.metadata.text)
+        return self.vector[area]
 
     @property
-    def content(self):
-        if self.single:
-            return [self.ask.prompt]
-        else:
-            return [self.ask.prompt, self.reply.prompt]
-
-    @property
-    def raw(self):
-        return "\n".join(self.content)
-
-    @property
-    def message(self):
-        if self.single:
-            return [[self.ask.start, self.ask.text]]
-        else:
-            return [[self.ask.start, self.ask.text], [self.reply.start, self.reply.text]]
+    def text(self):
+        return f"{self.metadata.start}{self.metadata.connect_words}{self.metadata.text}"
 
 
 class InteractionWeight(BaseModel):
-    interaction: Interaction
+    interaction: Message
     weight: List[float] = []
 
     @property
@@ -104,104 +95,47 @@ class LlmTransfer(BaseModel):
     raw: Tuple[Any, Any]
 
 
-####
+def get_hex(string):
+    bytes_str = string.encode('utf-8')
+    md5 = hashlib.md5()
+    md5.update(bytes_str)
+    h16 = md5.hexdigest()
+    return int(h16, 16)
 
-class LlmBaseParam(BaseModel):
-    pass
 
+class Conversation(object):
+    """基础身份类型，供其他模块使用"""
 
-class LlmBase(ABC):
+    def __init__(self, start_name: str,
+                 restart_name: str,
+                 conversation_id: int = 1,
+                 init_usage: int = 0
+                 ):
+        """
+        start_name: 说话者的名字
+        restart_name: 回答时候使用的名字
+        conversation_id: 对话 ID，很重要，如果不存在会计算 start_name 的 唯一ID 作为 ID
+        init_usage: int 初始计费
+        """
+        self.hash_secret = "LLM"
+        if not conversation_id:
+            conversation_id = get_hex(start_name)
+            logger.warning("conversation_id empty!!!")
+        self.conversation_id = str(conversation_id)
+        self.start_name = start_name.strip(":").strip("：")
+        self.restart_name = restart_name.strip(":").strip("：")
+        self.__usage = init_usage if init_usage > 0 else 0
 
-    @property
-    def _llm_type(self) -> str:
-        """Return type of llm."""
-        return "unknown"
+    def get_conversation_hash(self):
+        uid = f"{str(self.hash_secret)}{str(self.conversation_id)}"
+        hash_object = hashlib.sha256(uid.encode())
+        return hash_object.hexdigest()
 
-    @abstractmethod
-    def get_token_limit(self) -> int:
-        return 2000
+    def get_round_usage(self):
+        return self.__usage
 
-    @abstractmethod
-    def tokenizer(self, text, raw=False) -> Union[int, list]:
-        if raw:
-            return []
-        return len(text)
-
-    @abstractmethod
-    def resize_sentence(self, text: str, token: int) -> str:
-        return text[:token]
-
-    @abstractmethod
-    def task_context(self, task: str, prompt: str, predict_tokens: int = 500) -> Any:
-        return None
-
-    @abstractmethod
-    def resize_context(self, head: list, body: list, foot: list = None, token: int = 0) -> str:
-        if foot is None:
-            foot = []
-        _all = ''.join(head + body + foot)
-        return self.resize_sentence(_all, token=token)
-
-    @staticmethod
-    def model_context_size(model_name: str) -> int:
-        pass
-
-    @abstractmethod
-    def parse_reply(self, reply: List[str]) -> str:
-        if reply:
-            return str(reply[0])
+    def update_usage(self, usage: int = 0, override: bool = False):
+        if override:
+            self.__usage = usage
         else:
-            return ""
-
-    @staticmethod
-    def parse_response(response) -> list:
-        return [""]
-
-    @staticmethod
-    def parse_usage(response) -> Optional[int]:
-        return None
-
-    @abstractmethod
-    async def transfer(self,
-                       prompt: Any,
-                       predict_tokens: int = 2000
-                       ) -> LlmTransfer:
-        pass
-
-    @abstractmethod
-    async def run(self,
-                  prompt: Any,
-                  validate: Union[List[str], None] = None,
-                  predict_tokens: int = 500,
-                  llm_param: LlmBaseParam = None,
-                  stop_words: list = None,
-                  ) -> Optional[LlmReturn]:
-        return None
-
-
-class MemoryBaseLoader(object):
-    def __init__(
-            self,
-            session_id: str,
-            key_prefix: str = "llm_kira_message_store:",
-    ):
-        self._memory: list = []
-        self.key_prefix = key_prefix
-        self.session_id = session_id
-
-    @property
-    def key(self) -> str:
-        return self.key_prefix + self.session_id
-
-    @property
-    def message(self) -> List[Interaction]:
-        items = self._memory
-        messages = [Interaction(**items) for items in items]
-        return messages
-
-    def append(self, message: List[Interaction]) -> None:
-        for item in message:
-            self._memory.append(item.dict())
-
-    def clear(self) -> None:
-        self._memory = []
+            self.__usage += usage
