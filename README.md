@@ -1,9 +1,28 @@
+
+# 🔨Attention
+llm-kira 库因与插件核心命名机制冲突而被删除。
+您不能再在新机器上执行 `pip install llm-kira`
+
+转而代之，如果您有需要，可以克隆项目使用 
+```
+git clone https://github.com/LlmKira/llm-kira/tree/0.7.4
+pip install poetry
+cd llm-kira
+poetry install
+```
+
+The llm-kira library was removed due to conflict with the plugin core naming mechanism.
+You can no longer execute `pip install llm-kira` on a new machine
+
+Instead, if you need, you can clone the project and use
+```
+git clone https://github.com/LlmKira/llm-kira/tree/0.7.4
+pip install poetry
+cd llm-kira
+poetry install
+```
 # llm-kira
 
-
-## Refactoring
-
-> Contributors welcomed.
 
 **轻量级多语言模型异步聊天机器人框架。**
 
